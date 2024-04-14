@@ -30,5 +30,3 @@ This dataset is a rich resource that fosters the development, testing, and compa
 ### Building & running the image from a Dockerfile
 
 ### Running the Code and Expected Outputs
-
-# GuardianAI
