@@ -1,4 +1,8 @@
-# **GuardianAI**
+## **GuardianAI**
+#### Team Members: Reem Fashho, Owen Scott, Yi Yang
+##### https://coe-332-sp24.readthedocs.io/en/latest/homework/final.html
+
+### Due Date: Friday, May 3, by 1:00 PM Central Time
 
 ### **Pitch**
 Our project focuses on leveraging the Credit Card Fraud Prediction Dataset available on Kaggle to create a robust containerized web application. This application will utilize databases for efficient data storage and management, enabling user querying and facilitating job queues. By employing Flask, we will develop API endpoints that provide users with access to comprehensive summary statistics and plots derived from the Credit Card Fraud dataset. More importantly, considering the widespread utilization of this dataset for machine learning-based fraud detection, we aim to design our application to accept credit card input for predicting potential fraud from a pre-trained model we develop. This will allow users to submit a job, and retrieve a prediction about whether the particular credit card attributes are likely fraudulent. 
