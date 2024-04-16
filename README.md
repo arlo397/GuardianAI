@@ -1,6 +1,7 @@
 ## **GuardianAI**
-#### Team Members: Reem Fashho, Owen Scott, Yi Yang
 ##### https://coe-332-sp24.readthedocs.io/en/latest/homework/final.html
+
+#### Team Members: Reem Fashho, Owen Scott, Yi Yang
 
 ### Due Date: Friday, May 3, by 1:00 PM Central Time
 
@@ -31,6 +32,8 @@ This dataset is a rich resource that fosters the development, testing, and compa
 
 ### Diagram
 
-### Building & running the image from a Dockerfile
+### Building & Running the Web App
+
+### Executing Test Cases 
 
 ### Running the Code and Expected Outputs
