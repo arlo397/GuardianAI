@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from flask import Flask, jsonify, abort, request
+from flask import Flask, jsonify, abort, request, Response
 import pandas as pd
 import logging
 import requests
@@ -8,7 +8,16 @@ app = Flask(__name__)
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s:%(message)s')
 
 @app.route('/data_example', methods=['GET'])
-def get_data():
+def get_data() -> Response:
+    """
+    Fetches and returns the first five records of the dataset as JSON.
+
+    Returns:
+        flask.Response: A JSON response containing the first five records of the dataset.
+
+    Raises:
+        HTTPException: An error 500 if the data cannot be loaded due to an internal error.
+    """
     data_path = './data/fraud_test.csv'
     try:
         df = pd.read_csv(data_path)
@@ -19,8 +28,19 @@ def get_data():
         abort(500)
 
 
+
 @app.route('/amt_analysis', methods=['GET'])
-def amt_analysis():
+def amt_analysis() -> Response:
+    """
+    Computes and returns statistical descriptions of the transaction amounts in the dataset.
+
+    Returns:
+        flask.Response: A JSON response containing statistical summaries of the 'amt' field in the dataset,
+                         including count, mean, std, min, 25%, 50%, 75%, and max.
+
+    Raises:
+        HTTPException: An error 500 if the data cannot be loaded or statistics cannot be computed due to an internal error.
+    """
     data_path = './data/fraud_test.csv'
     try:
         df = pd.read_csv(data_path)
@@ -34,12 +54,15 @@ def amt_analysis():
 
 
 @app.route('/amt_fraud_correlation', methods=['GET'])
-def compute_correlation():
+def compute_correlation() -> Response:
     """
-    Computes the correlation between cc_num and is_fraud from the dataset.
+    Computes the correlation between transaction amount ('amt') and fraud status ('is_fraud') in the dataset.
 
     Returns:
-        JSON: A JSON object with the correlation value.
+        flask.Response: A JSON response containing the correlation matrix between 'amt' and 'is_fraud'.
+
+    Raises:
+        HTTPException: An error 500 if the data cannot be loaded or the correlation cannot be computed due to an internal error.
     """
     data_path = './data/fraud_test.csv'
     try:
@@ -51,8 +74,18 @@ def compute_correlation():
         logging.error(f"Error computing correlation: {e}")
         abort(500)
 
+
 @app.route('/fraudulent_zipcode_info', methods=['GET'])
-def fraudulent_zipcode_info():
+def fraudulent_zipcode_info() -> Response:
+    """
+    Identifies the zipcode with the highest number of fraudulent transactions, and retrieves its geographic location.
+
+    Returns:
+        flask.Response: A JSON response containing the most fraudulent zipcode, the number of frauds, and a Google Maps link to the location.
+
+    Raises:
+        HTTPException: An error 500 if there is a failure in data handling or API interaction, or a 404 if no location can be found for the zipcode.
+    """
     data_path = './data/fraud_test.csv'
     bing_api_key = "AoaZqu_awoToijquulNRBaNbW98dniWa17O-QGrlBxP6Nv60C-3YaMIDkLqNb5UL"
 
@@ -64,7 +97,6 @@ def fraudulent_zipcode_info():
         most_fraudulent_zipcode = fraudulent_zipcode_counts.idxmax()
         max_fraud_count = fraudulent_zipcode_counts.max()
 
-        # Use Bing Maps API to get the location details
         response = requests.get(
             f"http://dev.virtualearth.net/REST/v1/Locations/US/{most_fraudulent_zipcode}",
             params={"key": bing_api_key}
@@ -89,6 +121,7 @@ def fraudulent_zipcode_info():
     except Exception as e:
         logging.error(f"Error loading data or computing statistics or fetching location: {e}")
         abort(500)
+
 
 
 if __name__ == '__main__':
