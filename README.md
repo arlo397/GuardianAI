@@ -13,6 +13,33 @@ This project is essential as it tackles the pressing issue of credit card fraud 
 ### Software Diagram
 The following software diagram captures the primary components and workflow of our system, describing the process in which... 
 
+### Description of Folder Contents
+- `Dockerfile`: Contains instructions for building a Docker image of our program
+- `docker-compose.yaml`: YAML file used to replace running the `docker build` and `docker run` commands for deploying a container. Orchestrates 3 services together: Redis Database, Flask App, Worker.
+- `src/api.py`: Main Python script that interacts with our fraud data set, hosts the Flask app that allows the user to query for information, as well as interacts with the Redis database. 
+    - [GET] `/data`: Returns all data from Redis
+    - [POST] `/data`: Puts data into Redis
+    - [DELETE] `/data`: Deletes data in Redis
+    - [GET] `/genes`: Returns json-formatted list of all hgnc_ids
+    - [GET] `/genes/<hgnc_id>`: Return all data associated with <hgnc_id>
+    - [GET] `/jobs/<jobid>` : Returns all job information for a given JOB ID
+    - [GET] `/jobs`: Returns all existing JOB IDs
+    - [POST] `/jobs`: Creates a new job with a unique identifier (uuid)
+        - The `/jobs` POST request must include a data packet in JSON format which is stored along with the job information. For our application, the client must provide the following JSON formatted data: 
+          '{"Year Modified Start": <start_year>, "Year Modified End": <end_year>}' -H "Content-Type: application/json"
+    - [GET] `/results/<jobid>`: Return requested job result in the form of a JSON dictionary. If the job has not yet been finished, the api returns a message indicating so.
+- `src/jobs.py`: Initializes databases and provides the functionality to create/submit/put jobs on the queue. 
+- `src/worker.py`: Pull jobs off of the queue and executes job functionality. 
+- `requirements.txt`: Text file that lists all of the Python non-standard libraries used to develop the code.
+- `data/`: Local Directory for Redis container to presist data to file system across container executions. 
+- `test/test_api.py`: Tests functionality in `src/api.py`
+- `test/test_jobs.py`: Tests functionailty in `src/jobs.py`
+- `test/test_worker.py`: Tests functionailty in `src/worker.py`
+
+Note: All throughout the code source, strategic logging is implemented to alert the developer of important events and bugs that arise. Logs are stored in `logger.log`
+
+To view the logger for each container, execute the following:  `docker exec -it <container_id> bash`. `logger.log` is found in `/app`. Logs concerning the `worker` container are found by executing the command for the `worker` container id. Get the container id by running: `docker ps -a`. 
+
 ### Data 
 ##### Source: https://www.kaggle.com/datasets/kelvinkelue/credit-card-fraud-prediction
 The dataset "Credit Card Fraud Prediction" is designed to evaluate and compare various fraud detection models. It comprises 555,719 records across 22 attributes, featuring a comprehensive mix of categorical and numerical data types with no missing values. Essential components of the dataset include:
@@ -24,17 +51,31 @@ The dataset "Credit Card Fraud Prediction" is designed to evaluate and compare v
 
 This dataset is a rich resource that fosters the development, testing, and comparison of different fraud detection techniques. It is a valuable tool for researchers and practitioners dedicated to advancing the field of fraud detection through innovative modeling and analysis.
 
-### Description of Folder Contents
-
-
 ### Flask Application
 
 ### Diagram
 
 ### Instructions on How to Deploy Containerized Code with docker-compose
+Once the code has been pulled, execute: `docker-compose up --build`. 
+To have the container running in the background, add the `-d` tag to the command. 
 
-### Instructions on How to Run Test Cases
+This will effectively build and deploy the docker images as containers ensuring port to port mapping and proper organization and dependency between the containers. Specifically, the command builds the `worker` and `flask-app` images and pulls the `redis` stock image for use. 
 
+Execute `docker ps -a` to ensure the three containers are up and runnning. You should see the following:
+```
+CONTAINER ID   IMAGE                           COMMAND                  CREATED          STATUS                      PORTS                                       NAMES
+0ed6746af37c   username/fraud_detect_app:1.0   "python3 api.py"         58 seconds ago   Up 57 seconds               0.0.0.0:5000->5000/tcp, :::5000->5000/tcp   guardianai_flask-api_1
+e89eb33406de   username/fraud_detect_app:1.0   "python3 worker.py"      58 seconds ago   Up 57 seconds                                               guardianai_worker_1
+dc51e6ac5ae9   redis:7                         "docker-entrypoint.s…"   59 seconds ago   Up 58 seconds               0.0.0.0:6379->6379/tcp, :::6379->6379/tcp   guardianai_redis-db_1
+```
+* Note for developers: If you make edits to any of the contaner source files (i.e, `worker.py` or `app.py`), you can redeploy the containers by simply running: `docker-compose up --build -d <edited_image>` rather than executing `docker-copmpose down` followed by `docker-compose up --build -d` again. 
+
+Once you have ensured that the microservice is up and running, you can access your application via curl and by specifying the port.
+
+### Instructions For Accessing Web App Routes & Route Output Descriptions
+While the service is up (after executing `docker-compose up`), you may curl the following example commands to interact with the application. 
+
+#### Curl Commands to Routes: `curl http://<ipaddress>:port/route`
 1. **Data Example Endpoint**
 
    - **Description**: This endpoint provides a quick look at the dataset by returning the first five entries.
@@ -156,3 +197,18 @@ This dataset is a rich resource that fosters the development, testing, and compa
      ```
 
    ![Alt text](googlemap_location.jpg)
+
+### Instructions on How to Run Test Cases
+Unit tests for the application are stored in the `/tests` directory and copied over to the `app` directory in the container (alongside the main scripts). To execute the test scripts, enter into the respective container interactively and execute `pytest`.
+
+Example: Run the following commands
+```
+docker exec -it <container_id> bash
+ls # Check that the test scripts are in the `/app` directory
+
+# Run pytest
+pytest
+```
+
+### Instructions to Stop Microservice 
+When you are ready to remove and kill the services, execute the following command: `docker-compose down`

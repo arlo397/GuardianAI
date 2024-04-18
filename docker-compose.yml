@@ -12,7 +12,7 @@ services:
         build:
             context: ./
             dockerfile: Dockerfile
-        image: reemf123/gene_api_app:1.0
+        image: reemf123/fraud_detect_app:1.0
         ports:
             - 5000:5000
         depends_on:
@@ -25,7 +25,7 @@ services:
         build:
             context: ./
             dockerfile: Dockerfile
-        image: reemf123/gene_api_app:1.0
+        image: reemf123/fraud_detect_app:1.0
         environment:
             REDIS_IP: "redis-db"
             LOG_LEVEL: "DEBUG"

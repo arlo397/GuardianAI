@@ -9,21 +9,20 @@ import os
 import requests
 
 #TODO: Later this will need to change since we shouldn't be accessing the raw data this way
-current_directory = os.path.dirname(__file__)
-
-# Modify the DATA_PATH to point to the directory above src
-DATA_PATH = os.path.join(current_directory, '..', 'data', 'fraud_test.csv')
+DATA_PATH = './fraud_test.csv'
 
 app = Flask(__name__)
 logging.basicConfig(filename='logger.log', format=format_str, level=logging.DEBUG, filemode='w')
 
 # curl localhost:5000/data -X GET
+# curl localhost:5000/data -X POST
+# curl localhost:5000/data -X DELETE
 @app.route('/data', methods=['GET', 'POST', 'DELETE'])
 def data():
     # POST - Put data into Redis
     if request.method == 'POST':
         df = pd.read_csv(DATA_PATH)
-        data:list = df.head().to_dict(orient='records')
+        data:list = df.to_dict(orient='records')
         # Iterate over data and store in redis database
         id_num = 0
         for fraud_dict in data:
@@ -188,5 +187,3 @@ def get_help():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
-
-
