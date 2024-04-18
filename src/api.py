@@ -5,9 +5,14 @@ from jobs import logging, logging_level, format_str, rd, add_job, get_job_by_id,
 import json
 import pandas as pd
 import logging
+import os
 import requests
 
-DATA_PATH = './data/fraud_test.csv'
+#TODO: Later this will need to change since we shouldn't be accessing the raw data this way
+current_directory = os.path.dirname(__file__)
+
+# Modify the DATA_PATH to point to the directory above src
+DATA_PATH = os.path.join(current_directory, '..', 'data', 'fraud_test.csv')
 
 app = Flask(__name__)
 logging.basicConfig(filename='logger.log', format=format_str, level=logging.DEBUG, filemode='w')
