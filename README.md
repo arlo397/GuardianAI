@@ -20,14 +20,15 @@ The following software diagram captures the primary components and workflow of o
     - [GET] `/data`: Returns all data from Redis
     - [POST] `/data`: Puts data into Redis
     - [DELETE] `/data`: Deletes data in Redis
-    - [GET] `/`: 
-    - [GET] `/`: 
-    - [GET] `/`:
+    - [GET] `/data_example?limit=<int>`: Returns the first n records of the dataset. Defaults to the first 5 records if query parameter isn't provided. 
+    - [GET] `/amt_analysis`: Returns statistical descriptions of the transaction amounts in the dataset.
+    - [GET] `/amt_fraud_correlation`: Returns the correlation between transaction amount ('amt') and fraud status ('is_fraud')
     - [GET] `/jobs/<jobid>` : Returns all job information for a given JOB ID
     - [GET] `/jobs`: Returns all existing JOB IDs
     - [POST] `/jobs`: Creates a new job with a unique identifier (uuid)
         - The `/jobs` POST request must include a data packet in JSON format which is stored along with the job information. For our application, the client must provide the following JSON formatted data: 
           '{"Year Modified Start": <start_year>, "Year Modified End": <end_year>}' -H "Content-Type: application/json"
+    - [DELETE] `/jobs`: Deletes all jobs 
     - [GET] `/results/<jobid>`: Return requested job result in the form of a JSON dictionary. If the job has not yet been finished, the api returns a message indicating so.
 - `src/jobs.py`: Initializes databases and provides the functionality to create/submit/put jobs on the queue. 
 - `src/worker.py`: Pull jobs off of the queue and executes job functionality. 
@@ -77,7 +78,8 @@ While the service is up (after executing `docker-compose up`), you may curl the 
 #### Curl Commands to Routes: `curl http://<ipaddress>:port/route`
 1. **Data Example Endpoint**
 
-   - **Description**: This endpoint provides a quick look at the dataset by returning the first five entries.
+   - **Description**: This endpoint provides a quick look at the dataset by returning the first five entries. If the user wishes to see the first n records of the data set, they may specify a limit query parameter as such: `curl -X GET 'localhost:5000/data_example?limit=2'`
+
 
      ```shell
      curl http://localhost:5000/data_example
@@ -197,16 +199,20 @@ While the service is up (after executing `docker-compose up`), you may curl the 
 
    ![Alt text](googlemap_location.jpg)
 
+5. 
+6. 
+7. 
+8. 
+
 ### Instructions on How to Run Test Cases
 Unit tests for the application are stored in the `/tests` directory and copied over to the `app` directory in the container (alongside the main scripts). To execute the test scripts, enter into the respective container interactively and execute `pytest`.
 
 Example: Run the following commands
-```
+
+```shell
 docker exec -it <container_id> bash
 ls # Check that the test scripts are in the `/app` directory
-
-# Run pytest
-pytest
+pytest # Run pytest
 ```
 
 ### Instructions to Stop Microservice 
