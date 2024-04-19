@@ -43,7 +43,7 @@ Note: All throughout the code source, strategic logging is implemented to alert 
 To view the logger for each container, execute the following:  `docker exec -it <container_id> bash`. `logger.log` is found in `/app`. Logs concerning the `worker` container are found by executing the command for the `worker` container id. Get the container id by running: `docker ps -a`. 
 
 ### Data 
-##### Source: https://www.kaggle.com/datasets/kelvinkelue/credit-card-fraud-prediction
+#### Source: https://www.kaggle.com/datasets/kelvinkelue/credit-card-fraud-prediction
 The dataset "Credit Card Fraud Prediction" is designed to evaluate and compare various fraud detection models. It comprises 555,719 records across 22 attributes, featuring a comprehensive mix of categorical and numerical data types with no missing values. Essential components of the dataset include:
 
 - Transaction Details: Precise timestamps, merchant information, and transaction amounts.
@@ -199,10 +199,10 @@ While the service is up (after executing `docker-compose up`), you may curl the 
 
    ![Alt text](googlemap_location.jpg)
 
-5. 
-6. 
-7. 
-8. 
+5. **Insert New Endpoint**
+6. **Insert New Endpoint**
+7. **Insert New Endpoint**
+8. **Insert New Endpoint**
 
 ### Instructions on How to Run Test Cases
 Unit tests for the application are stored in the `/tests` directory and copied over to the `app` directory in the container (alongside the main scripts). To execute the test scripts, enter into the respective container interactively and execute `pytest`.
