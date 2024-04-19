@@ -11,14 +11,34 @@ import requests
 #TODO: Later this will need to change since we shouldn't be accessing the raw data this way
 DATA_PATH = './fraud_test.csv'
 
+BING_API_KEY = "AoaZqu_awoToijquulNRBaNbW98dniWa17O-QGrlBxP6Nv60C-3YaMIDkLqNb5UL"
+
+
 app = Flask(__name__)
 logging.basicConfig(filename='logger.log', format=format_str, level=logging.DEBUG, filemode='w')
+
+def get_data():
+    """Function retrieves all data stored in the redis database
+
+    Returns:
+        List: List of dictionaries storing records
+    """
+    data = []
+    for trans_id in rd.keys():
+        data.append(json.loads(rd.get(trans_id)))
+    return data
 
 # curl localhost:5000/data -X GET
 # curl localhost:5000/data -X POST
 # curl localhost:5000/data -X DELETE
 @app.route('/data', methods=['GET', 'POST', 'DELETE'])
 def data():
+    """Function POSTs/GETs/DELETEs transaction fraud data from Redis database
+
+    Returns:
+        str: Confirmation about API task executed
+        List: List of dictionaries for each data observation
+    """
     # POST - Put data into Redis
     if request.method == 'POST':
         df = pd.read_csv(DATA_PATH)
@@ -30,16 +50,13 @@ def data():
             rd.set(id_num, json.dumps(fraud_dict))   
             id_num += 1         
 
-        logging.info("Data POSTED into Redis Database \n")
-        return ("Data POSTED into Redis Database \n")
+        logging.info("Data POSTED into Redis Database. \n")
+        return ("Data POSTED into Redis Database. \n")
 
     # GET - Return all data from Redis
     # Read all data out of Redis and return it as a JSON list.
     elif request.method == 'GET':
-        # Iterate over the keys in redis and return everthing as JSON
-        data = []
-        for trans_id in rd.keys():
-            data.append(json.loads(rd.get(trans_id)))
+        data = get_data()
 
         if len(data) == 0:
             logging.info("No data stored in Redis Database. \n")
@@ -52,16 +69,17 @@ def data():
     elif request.method == 'DELETE':
         for trans_id in rd.keys():
             rd.delete(trans_id)
-        logging.info("Data DELETED from Redis Database \n")
-        return ("Data DELETED from Redis Database \n")
+        logging.info("Data DELETED from Redis Database. \n")
+        return ("Data DELETED from Redis Database. \n")
     else:
          pass
 
-# curl localhost:5000/data_example -X GET
+# curl -X GET 'localhost:5000/data_example?limit=2'
+# curl -X GET localhost:5000/data_example
 @app.route('/data_example', methods=['GET'])
 def get_data_example() -> Response:
     """
-    Fetches and returns the first five records of the dataset as JSON.
+    Fetches and returns the first n records of the dataset as JSON. Defaults to the first 5 records
 
     Returns:
         flask.Response: A JSON response containing the first five records of the dataset.
@@ -69,14 +87,18 @@ def get_data_example() -> Response:
     Raises:
         HTTPException: An error 500 if the data cannot be loaded due to an internal error.
     """
-    try:
-        df = pd.read_csv(DATA_PATH)
-        logging.info("Data loaded successfully.")
-        return jsonify(df.head().to_dict(orient='records'))
-    except Exception as e:
-        logging.error(f"Error loading data: {e}")
-        abort(500)
+    limit = int(request.args.get('limit', 5))
 
+    data = []
+    for trans_id in range(0, limit): 
+        data.append(json.loads(rd.get(trans_id)))
+
+    if len(data) == 0:
+        logging.info("No data stored in Redis Database. \n")
+        return("No data stored in Redis Database. \n")
+
+    return data
+ 
 # curl localhost:5000/amt_analysis -X GET
 @app.route('/amt_analysis', methods=['GET'])
 def amt_analysis() -> Response:
@@ -91,11 +113,12 @@ def amt_analysis() -> Response:
         HTTPException: An error 500 if the data cannot be loaded or statistics cannot be computed due to an internal error.
     """
     try:
-        df = pd.read_csv(DATA_PATH)
+        data = get_data()
+        df = pd.DataFrame(data)
         amt_stats = df['amt'].describe()
         stats_dict = amt_stats.to_dict()
-
         return jsonify(stats_dict)
+
     except Exception as e:
         logging.error(f"Error loading data or computing statistics: {e}")
         abort(500)
@@ -113,10 +136,12 @@ def compute_correlation() -> Response:
         HTTPException: An error 500 if the data cannot be loaded or the correlation cannot be computed due to an internal error.
     """
     try:
-        df = pd.read_csv(DATA_PATH)
+        data = get_data()
+        df = pd.DataFrame(data)
         correlation = df[['amt', 'is_fraud']].corr()
         logging.info("Correlation computed successfully.")
         return jsonify(correlation.to_dict())
+
     except Exception as e:
         logging.error(f"Error computing correlation: {e}")
         abort(500)
@@ -133,10 +158,9 @@ def fraudulent_zipcode_info() -> Response:
     Raises:
         HTTPException: An error 500 if there is a failure in data handling or API interaction, or a 404 if no location can be found for the zipcode.
     """
-    bing_api_key = "AoaZqu_awoToijquulNRBaNbW98dniWa17O-QGrlBxP6Nv60C-3YaMIDkLqNb5UL"
-
     try:
-        df = pd.read_csv(DATA_PATH)
+        data = get_data()
+        df = pd.DataFrame(data)
         fraud_transactions = df[df['is_fraud'] == 1]
         fraudulent_zipcode_counts = fraud_transactions['zip'].astype(str).value_counts()
 
@@ -145,9 +169,8 @@ def fraudulent_zipcode_info() -> Response:
 
         response = requests.get(
             f"http://dev.virtualearth.net/REST/v1/Locations/US/{most_fraudulent_zipcode}",
-            params={"key": bing_api_key}
+            params={"key": BING_API_KEY }
         )
-        data = response.json()
         if response.status_code == 200 and data['resourceSets'][0]['resources']:
             location_data = data['resourceSets'][0]['resources'][0]
             lat, lon = location_data['point']['coordinates']

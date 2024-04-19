@@ -11,7 +11,7 @@ Our project focuses on leveraging the Credit Card Fraud Prediction Dataset avail
 This project is essential as it tackles the pressing issue of credit card fraud by using advanced explainable AI techniques on the Credit Card Fraud Prediction Dataset from Kaggle. It will provide a containerized web application that offers real-time fraud prediction, enhancing security measures for financial institutions and protecting consumers from fraudulent transactions.
 
 ### Software Diagram
-The following software diagram captures the primary components and workflow of our system, describing the process in which... 
+The following software diagram captures the primary components and workflow of our system... 
 
 ### Description of Folder Contents
 - `Dockerfile`: Contains instructions for building a Docker image of our program
@@ -20,8 +20,9 @@ The following software diagram captures the primary components and workflow of o
     - [GET] `/data`: Returns all data from Redis
     - [POST] `/data`: Puts data into Redis
     - [DELETE] `/data`: Deletes data in Redis
-    - [GET] `/genes`: Returns json-formatted list of all hgnc_ids
-    - [GET] `/genes/<hgnc_id>`: Return all data associated with <hgnc_id>
+    - [GET] `/`: 
+    - [GET] `/`: 
+    - [GET] `/`:
     - [GET] `/jobs/<jobid>` : Returns all job information for a given JOB ID
     - [GET] `/jobs`: Returns all existing JOB IDs
     - [POST] `/jobs`: Creates a new job with a unique identifier (uuid)
@@ -52,8 +53,6 @@ The dataset "Credit Card Fraud Prediction" is designed to evaluate and compare v
 This dataset is a rich resource that fosters the development, testing, and comparison of different fraud detection techniques. It is a valuable tool for researchers and practitioners dedicated to advancing the field of fraud detection through innovative modeling and analysis.
 
 ### Flask Application
-
-### Diagram
 
 ### Instructions on How to Deploy Containerized Code with docker-compose
 Once the code has been pulled, execute: `docker-compose up --build`. 
