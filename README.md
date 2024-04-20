@@ -33,6 +33,7 @@ The following software diagram captures the primary components and workflow of o
     - [GET] `/results/<jobid>`: Return requested job result in the form of a JSON dictionary. If the job has not yet been finished, the api returns a message indicating so.
 - `src/jobs.py`: Initializes databases and provides the functionality to create/submit/put jobs on the queue. 
 - `src/worker.py`: Pull jobs off of the queue and executes job functionality. 
+- `src/ML_model.py`: Train our AI model.
 - `requirements.txt`: Text file that lists all of the Python non-standard libraries used to develop the code.
 - `data/`: Local Directory for Redis container to presist data to file system across container executions. 
 - `test/test_api.py`: Tests functionality in `src/api.py`
@@ -206,7 +207,7 @@ curl -X GET localhost:5000/data_example
 
    - **Description**: This endpoint aggregates the number of fraudulent transactions from the `fraud_test.csv` dataset by state. It provides a detailed count of fraudulent activities grouped by each state to help identify regions with higher instances of fraud.
 
-     ```python
+     ```shell
      curl localhost:5000/fraud_by_state -X GET
      ```
 
@@ -233,7 +234,57 @@ curl -X GET localhost:5000/data_example
      }
      ```
 
-6. **Insert New Endpoint**
+6. **AI Analysis Endpoint **
+
+   - **Description**: This endpoint is dedicated to analyzing and returning the importance of features from a trained machine learning model. It invokes the `train_model` function, which orchestrates the data preparation, model training, and computation of feature importances. Once the model is trained, the function assesses which features significantly impact the model's predictions and returns these feature importances in a structured JSON format. This helps in understanding the model's decision-making process and in identifying the most influential factors in the dataset.
+
+   - **More details of our AI model:**
+
+     - Model Description
+
+       Our AI model employs a RandomForestClassifier to effectively detect fraudulent transactions. This model is ideal for handling complex datasets with a mixture of categorical and numerical features, making it particularly suitable for analyzing transaction data where multiple variables influence the likelihood of fraud.
+
+     - Performance: 
+
+       On the test set, our model achieves an accuracy of 99%, highlighting its efficacy in identifying fraudulent transactions accurately.
+
+     - Analysis Tools: 
+
+       We leverage feature importance techniques, which help in understanding the predictive power of each variable. This insight is critical for people to focus on the most impactful features.
+
+     ```shell
+     curl localhost:5000/ai_analysis -X GET
+     ```
+
+   - *expected output*
+
+     ```shell
+     {
+       "feature_importances": [
+         {
+           "feature": "amt",
+           "importance": 0.29070396208787314
+         },
+         {
+           "feature": "time",
+           "importance": 0.07287082998920907
+         },
+         {
+           "feature": "unix_time",
+           "importance": 0.05540575128302068
+         },
+         {
+           "feature": "merch_long",
+           "importance": 0.05058397954013699
+         },
+         ...
+         {
+           "feature": "year",
+           "importance": 0.0
+         }
+       ]
+     }
+     ```
 
 7. **Insert New Endpoint**
 

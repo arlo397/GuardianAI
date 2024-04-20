@@ -236,6 +236,40 @@ def fraud_by_state() -> Response:
         abort(500, description="Internal Server Error")
 
 
+# curl localhost:5000/ai_analysis -X GET
+@app.route('/ai_analysis', methods=['GET'])
+def ai_analysis():
+    """
+    Endpoint for analyzing the feature importance of a trained model.
+    This function calls the train_model function to get the trained model
+    and its feature importances, then returns those importances in a JSON format.
+
+    Returns:
+        Flask Response: JSON formatted string of feature importances sorted by their importance.
+        If there's an error during processing, an internal server error is raised.
+    """
+    try:
+        # Import the function to train the model and get feature importances
+        from ML_model import train_model
+
+        # Train the model and retrieve feature importances
+        feature_importances = train_model()
+
+        # Convert the DataFrame of feature importances to JSON format
+        # Ensure the DataFrame is returned as a JSON response by using 'records' orientation
+        return jsonify(feature_importances=feature_importances.to_dict(orient='records'))
+
+    except Exception as e:
+        # Log any errors encountered during the process
+        logging.error(f"Error processing data: {e}")
+
+        # Abort the request and return an HTTP 500 Internal Server Error response
+        # The description provides more context about the error
+        abort(500, description="Internal Server Error")
+
+
+
+
 # curl localhost:5000/jobs -X GET
 # curl localhost:5000/jobs -X DELETE
 # curl localhost:5000/jobs -X POST -d '{}' -H "Content-Type: application/json"
