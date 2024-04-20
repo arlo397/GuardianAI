@@ -33,7 +33,7 @@ The following software diagram captures the primary components and workflow of o
     - [GET] `/results/<jobid>`: Return requested job result in the form of a JSON dictionary. If the job has not yet been finished, the api returns a message indicating so.
 - `src/jobs.py`: Initializes databases and provides the functionality to create/submit/put jobs on the queue. 
 - `src/worker.py`: Pull jobs off of the queue and executes job functionality. 
-- `src/ML_model.py`: Train our AI model.
+- `src/ML_model.py`: Implements a Random-Forest Classifier to detect fraud with a high accuracy of 99%, leveraging feature importance analysis to enhance predictive insights.
 - `requirements.txt`: Text file that lists all of the Python non-standard libraries used to develop the code.
 - `data/`: Local Directory for Redis container to presist data to file system across container executions. 
 - `test/test_api.py`: Tests functionality in `src/api.py`
