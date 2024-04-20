@@ -1,8 +1,9 @@
-## **GuardianAI**
+# **GuardianAI**
 ### Team Members: Reem Fashho, Owen Scott, Yi Yang
 
-#### Due Date: Friday, May 3, by 1:00 PM Central Time
-##### https://coe-332-sp24.readthedocs.io/en/latest/homework/final.html
+***Due Date: Friday, May 3, by 1:00 PM Central Time***
+
+https://coe-332-sp24.readthedocs.io/en/latest/homework/final.html
 
 ### Project Description
 Our project focuses on leveraging the Credit Card Fraud Prediction Dataset available on Kaggle to create a robust containerized web application. This application will utilize databases for efficient data storage and management, enabling user querying and facilitating job queues. By employing Flask, we will develop API endpoints that provide users with access to comprehensive summary statistics and plots derived from the Credit Card Fraud dataset. More importantly, considering the widespread utilization of this dataset for machine learning-based fraud detection, we aim to design our application to accept credit card input for predicting potential fraud from a pre-trained model we develop. This will allow users to submit a job, and retrieve a prediction about whether the particular credit card attributes are likely fraudulent. 
@@ -43,7 +44,8 @@ Note: All throughout the code source, strategic logging is implemented to alert 
 To view the logger for each container, execute the following:  `docker exec -it <container_id> bash`. `logger.log` is found in `/app`. Logs concerning the `worker` container are found by executing the command for the `worker` container id. Get the container id by running: `docker ps -a`. 
 
 ### Data 
-#### Source: https://www.kaggle.com/datasets/kelvinkelue/credit-card-fraud-prediction
+**Source: https://www.kaggle.com/datasets/kelvinkelue/credit-card-fraud-prediction**
+
 The dataset "Credit Card Fraud Prediction" is designed to evaluate and compare various fraud detection models. It comprises 555,719 records across 22 attributes, featuring a comprehensive mix of categorical and numerical data types with no missing values. Essential components of the dataset include:
 
 - Transaction Details: Precise timestamps, merchant information, and transaction amounts.
@@ -55,7 +57,8 @@ This dataset is a rich resource that fosters the development, testing, and compa
 
 ### Flask Application
 
-### Instructions on How to Deploy Containerized Code with docker-compose
+#### Instructions on How to Deploy Containerized Code with docker-compose
+
 Once the code has been pulled, execute: `docker-compose up --build`. 
 To have the container running in the background, add the `-d` tag to the command. 
 
@@ -72,18 +75,18 @@ dc51e6ac5ae9   redis:7                         "docker-entrypoint.s…"   59 sec
 
 Once you have ensured that the microservice is up and running, you can access your application via curl and by specifying the port.
 
-### Instructions For Accessing Web App Routes & Route Output Descriptions
+#### Instructions For Accessing Web App Routes & Route Output Descriptions
 While the service is up (after executing `docker-compose up`), you may curl the following example commands to interact with the application. 
 
-#### Curl Commands to Routes: `curl http://<ipaddress>:port/route`
+**Curl Commands to Routes: `curl http://<ipaddress>:port/route`**
+
 1. **Data Example Endpoint**
+- **Description**: This endpoint provides a quick look at the dataset by returning the first five entries. If the user wishes to see the first n records of the data set, they may specify a limit query parameter as such: `curl -X GET 'localhost:5000/data_example?limit=2'`
 
-   - **Description**: This endpoint provides a quick look at the dataset by returning the first five entries. If the user wishes to see the first n records of the data set, they may specify a limit query parameter as such: `curl -X GET 'localhost:5000/data_example?limit=2'`
 
-
-     ```shell
-     curl http://localhost:5000/data_example
-     ```
+```shell
+curl -X GET localhost:5000/data_example
+```
 
    - *expected output*
 
@@ -122,7 +125,7 @@ While the service is up (after executing `docker-compose up`), you may curl the 
    - **Description**: This endpoint provides statistical summaries of the transaction amounts.
 
      ```shell
-     curl http://localhost:5000/amt_analysis
+     curl localhost:5000/amt_analysis -X GET
      ```
 
    - *expected output*
@@ -154,7 +157,7 @@ While the service is up (after executing `docker-compose up`), you may curl the 
    - **Description**: This endpoint calculates the correlation between transaction amounts (`amt`) and their fraud status (`is_fraud`). Correlation measures the degree to which two variables move in relation to each other. A higher positive correlation means that higher transaction amounts might be more associated with fraudulent transactions, whereas a negative correlation would indicate the opposite.
 
      ```shell
-     curl http://localhost:5000/amt_fraud_correlation
+     curl localhost:5000/amt_fraud_correlation -X GET
      ```
 
    - *expected output*
@@ -177,7 +180,7 @@ While the service is up (after executing `docker-compose up`), you may curl the 
    - **Description**: This endpoint calculates which zipcode has the highest number of fraudulent transactions from the `fraud_test.csv` dataset and retrieves geographical information for that zipcode. It serves to identify potential hotspots of fraudulent activity and provides a quick link to view the location on Google Maps.
 
      ```shell
-     curl http://localhost:5000/fraudulent_zipcode_info
+     curl localhost:5000/fraudulent_zipcode_info -X GET
      ```
 
    - *expected output*
@@ -197,14 +200,46 @@ While the service is up (after executing `docker-compose up`), you may curl the 
      }
      ```
 
-   ![Alt text](googlemap_location.jpg)
+   <img src="googlemap_location.jpg" alt="Alt text"  />
 
-5. **Insert New Endpoint**
+5. **Fraud by State Endpoint**
+
+   - **Description**: This endpoint aggregates the number of fraudulent transactions from the `fraud_test.csv` dataset by state. It provides a detailed count of fraudulent activities grouped by each state to help identify regions with higher instances of fraud.
+
+     ```python
+     curl localhost:5000/fraud_by_state -X GET
+     ```
+
+   - *expected output*
+
+     - Each state's abbreviation is listed along with the number of fraudulent transactions recorded in that state. This summary helps in understanding the geographic distribution of fraudulent activities.
+
+     ```python
+     {
+       "fraud_counts_by_state": {
+         "AK": 14,
+         "AL": 63,
+         "AR": 34,
+         "AZ": 27,
+         "CA": 76,
+         ...
+         "TN": 19,
+         "TX": 113,
+         "VA": 75,
+         "WA": 30,
+         "WI": 65,
+         "WY": 9
+       }
+     }
+     ```
+
 6. **Insert New Endpoint**
+
 7. **Insert New Endpoint**
+
 8. **Insert New Endpoint**
 
-### Instructions on How to Run Test Cases
+#### Instructions on How to Run Test Cases
 Unit tests for the application are stored in the `/tests` directory and copied over to the `app` directory in the container (alongside the main scripts). To execute the test scripts, enter into the respective container interactively and execute `pytest`.
 
 Example: Run the following commands
@@ -215,5 +250,5 @@ ls # Check that the test scripts are in the `/app` directory
 pytest # Run pytest
 ```
 
-### Instructions to Stop Microservice 
+#### Instructions to Stop Microservice 
 When you are ready to remove and kill the services, execute the following command: `docker-compose down`
