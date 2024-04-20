@@ -7,6 +7,7 @@ import pandas as pd
 import logging
 import os
 import requests
+import matplotlib.pyplot as plt
 
 #TODO: Later this will need to change since we shouldn't be accessing the raw data this way
 DATA_PATH = './fraud_test.csv'
@@ -137,7 +138,15 @@ def compute_correlation() -> Response:
     """
     try:
         data = get_data()
+        if not data:
+            logging.error("No data available.")
+            return "No data available.", 404
+
         df = pd.DataFrame(data)
+        if 'amt' not in df.columns or 'is_fraud' not in df.columns:
+            logging.error("Required columns are missing.")
+            return "Required columns are missing in the dataset.", 400
+
         correlation = df[['amt', 'is_fraud']].corr()
         logging.info("Correlation computed successfully.")
         return jsonify(correlation.to_dict())
@@ -190,6 +199,42 @@ def fraudulent_zipcode_info() -> Response:
     except Exception as e:
         logging.error(f"Error loading data or computing statistics or fetching location: {e}")
         abort(500)
+
+# curl localhost:5000/fraud_by_state -X GET
+@app.route('/fraud_by_state', methods=['GET'])
+def fraud_by_state() -> Response:
+    """
+    Calculates the number of fraudulent transactions per state.
+
+    Returns:
+        flask.Response: A JSON response containing the count of fraudulent transactions by state.
+
+    Raises:
+        HTTPException: An error 500 if the data cannot be loaded due to an internal error.
+    """
+    try:
+        data = get_data()
+        if not data:
+            logging.error("No data available.")
+            return jsonify({"error": "No data available."}), 404
+
+        df = pd.DataFrame(data)
+
+        # Check if required columns are present
+        if 'state' not in df.columns or 'is_fraud' not in df.columns:
+            logging.error("Required columns are missing in the data.")
+            return jsonify({"error": "Data format error."}), 400
+
+        # Filter fraudulent transactions and count by state
+        fraud_transactions = df[df['is_fraud'] == 1]
+        fraud_counts_by_state = fraud_transactions['state'].value_counts().to_dict()
+
+        return jsonify({"fraud_counts_by_state": fraud_counts_by_state})
+
+    except Exception as e:
+        logging.error(f"Error processing data: {e}")
+        abort(500, description="Internal Server Error")
+
 
 # curl localhost:5000/jobs -X GET
 # curl localhost:5000/jobs -X DELETE
