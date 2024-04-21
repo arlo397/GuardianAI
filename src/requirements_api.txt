@@ -1,0 +1,6 @@
+flask
+hotqueue
+matplotlib
+pandas
+redis
+requests

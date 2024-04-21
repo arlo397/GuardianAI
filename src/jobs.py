@@ -63,7 +63,7 @@ def get_all_job_ids():
     """Return list of Job ids"""
     job_ids = []
     for id in jdb.keys():
-       job_ids.append(id.decode())
+        job_ids.append(id.decode())
     return job_ids
 
 def update_job_status(jid:str, status:str):

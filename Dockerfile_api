@@ -1,0 +1,7 @@
+FROM python:3.10-slim
+
+WORKDIR /app
+COPY src/requirements_api.txt .
+RUN pip install -r requirements_api.txt
+
+COPY src/jobs.py src/api.py .

@@ -29,9 +29,9 @@ def get_data():
         data.append(json.loads(rd.get(trans_id)))
     return data
 
-# curl localhost:5000/data -X GET
-# curl localhost:5000/data -X POST
-# curl localhost:5000/data -X DELETE
+# curl localhost:5173/data -X GET
+# curl localhost:5173/data -X POST
+# curl localhost:5173/data -X DELETE
 @app.route('/data', methods=['GET', 'POST', 'DELETE'])
 def data():
     """Function POSTs/GETs/DELETEs transaction fraud data from Redis database
@@ -75,8 +75,8 @@ def data():
     else:
          pass
 
-# curl -X GET 'localhost:5000/data_example?limit=2'
-# curl -X GET localhost:5000/data_example
+# curl -X GET 'localhost:5173/data_example?limit=2'
+# curl -X GET localhost:5173/data_example
 @app.route('/data_example', methods=['GET'])
 def get_data_example() -> Response:
     """
@@ -100,7 +100,7 @@ def get_data_example() -> Response:
 
     return data
  
-# curl localhost:5000/amt_analysis -X GET
+# curl localhost:5173/amt_analysis -X GET
 @app.route('/amt_analysis', methods=['GET'])
 def amt_analysis() -> Response:
     """
@@ -124,7 +124,7 @@ def amt_analysis() -> Response:
         logging.error(f"Error loading data or computing statistics: {e}")
         abort(500)
 
-# curl localhost:5000/amt_fraud_correlation -X GET
+# curl localhost:5173/amt_fraud_correlation -X GET
 @app.route('/amt_fraud_correlation', methods=['GET'])
 def compute_correlation() -> Response:
     """
@@ -155,7 +155,7 @@ def compute_correlation() -> Response:
         logging.error(f"Error computing correlation: {e}")
         abort(500)
 
-# curl localhost:5000/fraudulent_zipcode_info -X GET
+# curl localhost:5173/fraudulent_zipcode_info -X GET
 @app.route('/fraudulent_zipcode_info', methods=['GET'])
 def fraudulent_zipcode_info() -> Response:
     """
@@ -200,7 +200,7 @@ def fraudulent_zipcode_info() -> Response:
         logging.error(f"Error loading data or computing statistics or fetching location: {e}")
         abort(500)
 
-# curl localhost:5000/fraud_by_state -X GET
+# curl localhost:5173/fraud_by_state -X GET
 @app.route('/fraud_by_state', methods=['GET'])
 def fraud_by_state() -> Response:
     """
@@ -236,7 +236,7 @@ def fraud_by_state() -> Response:
         abort(500, description="Internal Server Error")
 
 
-# curl localhost:5000/ai_analysis -X GET
+# curl localhost:5173/ai_analysis -X GET
 @app.route('/ai_analysis', methods=['GET'])
 def ai_analysis():
     """
@@ -270,22 +270,22 @@ def ai_analysis():
 
 
 
-# curl localhost:5000/jobs -X GET
-# curl localhost:5000/jobs -X DELETE
-# curl localhost:5000/jobs -X POST -d '{}' -H "Content-Type: application/json"
+# curl localhost:5173/jobs -X GET
+# curl localhost:5173/jobs -X DELETE
+# curl localhost:5173/jobs -X POST -d '{}' -H "Content-Type: application/json"
 @app.route("/jobs", methods = ['POST', 'GET', 'DELETE'])
 def jobs():
     pass
 
-# curl -X GET http://127.0.0.1:5000/jobs/<jobid>
+# curl -X GET http://127.0.0.1:5173/jobs/<jobid>
 @app.route("/jobs/<job_id>", methods=['GET'])
 def get_job(job_id:str):
     pass
 
-# curl -X GET http://127.0.0.1:5000/help
+# curl -X GET http://127.0.0.1:5173/help
 @app.route("/help", methods=['GET'])
 def get_help():
     pass
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5173)
