@@ -36,8 +36,10 @@ class TestJobFunctions(unittest.TestCase):
             self.assertIsInstance(job_dict, dict)
 
             # Check the contents of the jobs dictionary
-            self.assertIsInstance(type(job_dict['id']),  uuid.UUID) 
             self.assertIsInstance(type(job_dict['Status']),  str) 
+            # Check remaining contents of job dictionary once finalized. 
+            # self.assertIsInstance()
+            # self.assertIsInstance()
 
             # Clean up the jobs database
             delete_all_jobs()

@@ -138,8 +138,8 @@ def compute_correlation() -> Response:
     try:
         data = get_data()
         if not data:
-            logging.error("No data available.")
-            return "No data available.", 404
+            logging.error("No data available. \n")
+            return "No data available. \n", 404
 
         df = pd.DataFrame(data)
         if 'amt' not in df.columns or 'is_fraud' not in df.columns:
@@ -214,7 +214,7 @@ def fraud_by_state() -> Response:
     try:
         data = get_data()
         if not data:
-            logging.error("No data available.")
+            logging.error("No data available. \n")
             return jsonify({"error": "No data available."}), 404
 
         df = pd.DataFrame(data)

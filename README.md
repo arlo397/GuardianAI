@@ -79,9 +79,9 @@ e89eb33406de   username/fraud_detect_app:1.0   "python3 worker.py"      58 secon
 dc51e6ac5ae9   redis:7                         "docker-entrypoint.s…"   59 seconds ago   Up 58 seconds               0.0.0.0:6379->6379/tcp, :::6379->6379/tcp   guardianai_redis-db_1
 ```
 
-- Note for developers: If you make edits to any of the contaner source files (i.e, `worker.py` or `app.py`), you can redeploy the containers by simply running: `docker-compose up --build -d <edited_image>` rather than executing `docker-copmpose down` followed by `docker-compose up --build -d` again.
+- Note for developers: If you make edits to any of the contaner source files (i.e, `worker.py` or `app.py`), you can redeploy the containers by simply running: `docker-compose up --build  <edited_image>` rather than executing `docker-copmpose down` followed by `docker-compose up --build -d` again.
 
-Once you have ensured that the microservice is up and running, you can access your application via curl and by specifying the port.
+Once you have ensured that the microservice is up and running, you can access the application via `curl` commands.
 
 #### Instructions For Accessing Web App Routes & Route Output Descriptions
 
@@ -89,17 +89,104 @@ While the service is up (after executing `docker-compose up`), you may curl the 
 
 **Curl Commands to Routes: `curl http://<ipaddress>:port/route`**
 
-1. **Data Example Endpoint**
 
-- **Description**: This endpoint provides a quick look at the dataset by returning the first five entries. If the user wishes to see the first n records of the data set, they may specify a limit query parameter as such: `curl -X GET 'localhost:5173/data_example?limit=2'`
+1. **POST Data to Redis Database Endpoint**
+- **Description**: This endpoint stores the raw data into a Redis database that supports data persistence across container executions. POSTing the data takes a few minutes. 
 
 ```shell
-curl -X GET localhost:5173/data_example
+curl -X POST localhost:5173/data 
+```
+
+- _expected output_
+```shell
+Data POSTED into Redis Database. 
+```
+
+2. **GET Data from Redis Database Endpoint**
+- **Description**: This endpoint retrieves all of the data stored from the Redis database as a list of dictionaries. GETting the data takes a few minutes. 
+
+```shell
+curl -X GET localhost:5173/data 
+```
+
+- _expected output_
+```shell
+{
+    "Unnamed: 0": 283599,
+    "amt": 55.49,
+    "category": "entertainment",
+    "cc_num": 4428150000000000.0,
+    "city": "Colton",
+    "city_pop": 761,
+    "dob": "30/06/1943",
+    "first": "Brittany",
+    "gender": "F",
+    "is_fraud": 0,
+    "job": "Chief Marketing Officer",
+    "last": "Guerra",
+    "lat": 46.5901,
+    "long": -117.1692,
+    "merch_lat": 45.957848,
+    "merch_long": -116.587284,
+    "merchant": "fraud_Effertz, Welch and Schowalter",
+    "state": "WA",
+    "street": "79209 Gary Dale",
+    "trans_date_trans_time": "05/10/2020 11:04",
+    "trans_num": "f6ff017f02cc92423a2b88a0be0d387a",
+    "unix_time": 1380971076,
+    "zip": 99113
+  },
+  ...
+  {
+    "Unnamed: 0": 12259,
+    "amt": 1.45,
+    "category": "misc_net",
+    "cc_num": 4.50254e+18,
+    "city": "Ash Flat",
+    "city_pop": 2856,
+    "dob": "27/08/1926",
+    "first": "Stephanie",
+    "gender": "F",
+    "is_fraud": 0,
+    "job": "Hydrologist",
+    "last": "Cummings",
+    "lat": 36.2201,
+    "long": -91.6421,
+    "merch_lat": 36.198675,
+    "merch_long": -90.757786,
+    "merchant": "fraud_Nader-Heller",
+    "state": "AR",
+    "street": "1025 Robin Square",
+    "trans_date_trans_time": "25/06/2020 05:50",
+    "trans_num": "fad0975d67dd801858619f5009a9fb98",
+    "unix_time": 1372139451,
+    "zip": 72513
+  }
+```
+
+3. **DELETE Data from Redis Database Endpoint**
+- **Description**: This endpoint deletes all of the data stored in the Redis database. To execute other endpoints that rely on the data, `curl -X POST curl localhost:5173/data` must be re-executed. 
+
+```shell
+curl -X DELETE curl localhost:5173/data
+```
+
+- _expected output_
+```shell
+Data DELETED from Redis Database. 
+```
+
+4. **Data Example Endpoint**
+
+- **Description**: This endpoint provides a quick look at the dataset by returning the first five entries by default. If the user wishes to see the first n records of the data set, they may specify a limit query parameter, otherwise, the first five entries are returned via: `curl -X GET localhost:5173/data_example`
+
+```shell
+curl -X GET 'localhost:5173/data_example?limit=2'
 ```
 
 - _expected output_
 
-  ```shell
+```shell
   [
     {
       "Unnamed: 0": 0,
@@ -126,16 +213,42 @@ curl -X GET localhost:5173/data_example
       "unix_time": 1371816865,
       "zip": 29209
     },
-  ...
-  ```
+    {
+      "Unnamed: 0": 1,
+      "amt": 29.84,
+      "category": "personal_care",
+      "cc_num": 3573030000000000.0,
+      "city": "Altonah",
+      "city_pop": 302,
+      "dob": "17/01/1990",
+      "first": "Joanne",
+      "gender": "F",
+      "is_fraud": 0,
+      "job": "Sales professional, IT",
+      "last": "Williams",
+      "lat": 40.3207,
+      "long": -110.436,
+      "merch_lat": 39.450498,
+      "merch_long": -109.960431,
+      "merchant": "fraud_Sporer-Keebler",
+      "state": "UT",
+      "street": "3638 Marsh Union",
+      "trans_date_trans_time": "21/06/2020 12:14",
+      "trans_num": "324cc204407e99f51b0d6ca0055005e7",
+      "unix_time": 1371816873,
+      "zip": 84002
+    }
+ ]
 
-2. **Amount Analysis Endpoint**
+```
+
+5. **Amount Analysis Endpoint**
 
    - **Description**: This endpoint provides statistical summaries of the transaction amounts.
 
-     ```shell
-     curl localhost:5173/amt_analysis -X GET
-     ```
+    ```shell
+    curl localhost:5173/amt_analysis -X GET
+    ```
 
    - _expected output_
 
@@ -161,7 +274,7 @@ curl -X GET localhost:5173/data_example
      }
      ```
 
-3. **Amount-Fraud Correlation Endpoint**
+6. **Amount-Fraud Correlation Endpoint**
 
    - **Description**: This endpoint calculates the correlation between transaction amounts (`amt`) and their fraud status (`is_fraud`). Correlation measures the degree to which two variables move in relation to each other. A higher positive correlation means that higher transaction amounts might be more associated with fraudulent transactions, whereas a negative correlation would indicate the opposite.
 
@@ -184,9 +297,9 @@ curl -X GET localhost:5173/data_example
      }
      ```
 
-4. **Fraudulent Zipcode Information Endpoint**
+7. **Fraudulent Zipcode Information Endpoint**
 
-   - **Description**: This endpoint calculates which zipcode has the highest number of fraudulent transactions from the `fraud_test.csv` dataset and retrieves geographical information for that zipcode. It serves to identify potential hotspots of fraudulent activity and provides a quick link to view the location on Google Maps.
+   - **Description**: This endpoint calculates which zipcode has the highest number of fraudulent transactions from the dataset and retrieves geographical information for that zipcode. It serves to identify potential hotspots of fraudulent activity and provides a quick link to view the location on Google Maps.
 
      ```shell
      curl localhost:5173/fraudulent_zipcode_info -X GET
@@ -211,7 +324,7 @@ curl -X GET localhost:5173/data_example
 
    <img src="googlemap_location.jpg" alt="Alt text"  />
 
-5. **Fraud by State Endpoint**
+8. **Fraud by State Endpoint**
 
    - **Description**: This endpoint aggregates the number of fraudulent transactions from the `fraud_test.csv` dataset by state. It provides a detailed count of fraudulent activities grouped by each state to help identify regions with higher instances of fraud.
 
@@ -242,7 +355,7 @@ curl -X GET localhost:5173/data_example
      }
      ```
 
-6. **AI Analysis Endpoint**
+9. **AI Analysis Endpoint**
 
    - **Description**: This endpoint is dedicated to analyzing and returning the importance of features from a trained machine learning model. It invokes the `train_model` function, which orchestrates the data preparation, model training, and computation of feature importances. Once the model is trained, the function assesses which features significantly impact the model's predictions and returns these feature importances in a structured JSON format. This helps in understanding the model's decision-making process and in identifying the most influential factors in the dataset.
 
@@ -294,9 +407,9 @@ curl -X GET localhost:5173/data_example
      }
      ```
 
-7. **Insert New Endpoint**
+10. **Insert New Endpoint**
 
-8. **Insert New Endpoint**
+11. **Insert New Endpoint**
 
 #### Instructions on How to Run Test Cases
 
