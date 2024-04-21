@@ -242,7 +242,7 @@ curl -X GET localhost:5173/data_example
      }
      ```
 
-6. **AI Analysis Endpoint **
+6. **AI Analysis Endpoint**
 
    - **Description**: This endpoint is dedicated to analyzing and returning the importance of features from a trained machine learning model. It invokes the `train_model` function, which orchestrates the data preparation, model training, and computation of feature importances. Once the model is trained, the function assesses which features significantly impact the model's predictions and returns these feature importances in a structured JSON format. This helps in understanding the model's decision-making process and in identifying the most influential factors in the dataset.
 

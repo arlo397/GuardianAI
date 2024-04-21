@@ -14,7 +14,6 @@ DATA_PATH = './fraud_test.csv'
 
 BING_API_KEY = "AoaZqu_awoToijquulNRBaNbW98dniWa17O-QGrlBxP6Nv60C-3YaMIDkLqNb5UL"
 
-
 app = Flask(__name__)
 logging.basicConfig(filename='logger.log', format=format_str, level=logging.DEBUG, filemode='w')
 
@@ -73,7 +72,7 @@ def data():
         logging.info("Data DELETED from Redis Database. \n")
         return ("Data DELETED from Redis Database. \n")
     else:
-         pass
+        return ("/data route does not support this method. \n")
 
 # curl -X GET 'localhost:5173/data_example?limit=2'
 # curl -X GET localhost:5173/data_example
@@ -267,24 +266,76 @@ def ai_analysis():
         # The description provides more context about the error
         abort(500, description="Internal Server Error")
 
-
-
-
 # curl localhost:5173/jobs -X GET
 # curl localhost:5173/jobs -X DELETE
 # curl localhost:5173/jobs -X POST -d '{}' -H "Content-Type: application/json"
 @app.route("/jobs", methods = ['POST', 'GET', 'DELETE'])
 def jobs():
-    pass
+    if request.method == 'POST':
+        client_submitted_data = request.get_json()
+        if client_submitted_data is None:
+            return("[POST] /jobs route requires a JSON formatted data packet specifying .... Example: {'Some parameter':4, 'Some parameter': 5}")
+        else: 
+            # Check the data the client posted
+            # job_dict = add_job(client_submitted_data['Year Modified Start'], client_submitted_data['Year Modified End'])
+            # return job_dict
+            pass
+    
+    # List all existing job IDs
+    elif request.method == 'GET':
+        job_id_list = get_all_job_ids()
+        return job_id_list
+
+    # Delete JOBS
+    elif request.method == 'DELETE':
+        code = delete_all_jobs()
+        if code  == 0:
+            logging.info("Data DELETED from Jobs Database. \n")
+            return ("Data DELETED from Jobs Database. \n")
+        else: 
+            logging.info("Error DELETING Data from Jobs Database. \n")
+            return ("Error DELETING Data from Jobs Database. \n")
+    else:
+        return ("/jobs route does not support this method. \n")
 
 # curl -X GET http://127.0.0.1:5173/jobs/<jobid>
 @app.route("/jobs/<job_id>", methods=['GET'])
 def get_job(job_id:str):
-    pass
+    """Returns job information for a given job ID. 
+    Args:
+        job_id (str): Unique identifier for Job stored in database
+    Returns:
+        dict: Dictionary containing job id, job parameters posted by the client, and job status 
+    """
+    if isinstance(job_id, str): 
+        job_ids = get_all_job_ids()
+        if job_id in job_ids:
+            return get_job_by_id(job_id)
+        else:
+            logging.info("Client queried for a job with an id that does not exist. \n") 
+            return ("JOB ID provided does not exist. \n")
+    else: 
+        logging.info("Client queried for a job with an id type that does not exist. \n") 
+        return ("Invalid JOB ID type provided. \n")
 
+# curl -X GET http://127.0.0.1:5173/results/<jobid>
+@app.route("/results/<job_id>", methods=["GET"])
+def get_job_output(job_id:str) -> dict: 
+    # Check if job_id exists
+    job_description_dict = get_job_by_id(job_id)
+    if job_description_dict is not None: 
+        # Check status of job id
+        if job_description_dict['Status'] == 'Completed':  
+            job_result = get_job_result(job_id)
+            return job_result
+        else: 
+            error_string = "Current Job Status: " + job_description_dict['Status'] +  ". \n"
+            return error_string
+        
 # curl -X GET http://127.0.0.1:5173/help
 @app.route("/help", methods=['GET'])
 def get_help():
+    #TODO: After completing all of the routes, write description for each route
     pass
 
 if __name__ == '__main__':

@@ -4,4 +4,5 @@ WORKDIR /app
 COPY src/requirements_api.txt .
 RUN pip install -r requirements_api.txt
 
-COPY src/jobs.py src/api.py .
+COPY src/jobs.py src/api.py src/fraud_test.csv  ./
+COPY test/test_jobs.py test/test_api.py ./
