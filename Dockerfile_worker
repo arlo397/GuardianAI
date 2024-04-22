@@ -1,8 +1,7 @@
 FROM python:3.10-slim
 
 WORKDIR /app
-COPY src/requirements_worker.txt .
+COPY src/requirements_worker.txt ./
 RUN pip install -r requirements_worker.txt
 
-COPY src/jobs.py src/worker.py src/fraud_test.csv ./
-COPY test/test_jobs.py test/test_worker.py ./
+COPY src/jobs.py src/worker.py ./

@@ -12,7 +12,6 @@ logging.basicConfig(filename='logger.log', format=format_str, level=logging.DEBU
 _redis_ip = os.getenv('REDIS_IP')
 _redis_port = 6379
 
-
 try: 
     rd = redis.Redis(host=_redis_ip, port=_redis_port, db=0)      # Raw Data Database
     q = HotQueue("queue", host=_redis_ip, port=_redis_port, db=1) # Job Ids in Queue to be consumed by worker
