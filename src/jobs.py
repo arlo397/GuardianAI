@@ -33,8 +33,8 @@ def _instantiate_job(jid, status, param1, param2):
     return({
                 'id': jid,
                 'Status': status,
-                '': param1,
-                '': param2 
+                'Param1': param1,
+                'Param2': param2 
             })
 
 def _save_job(jid, job_dict):
