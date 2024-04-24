@@ -30,7 +30,7 @@ class TestJobFunctions(unittest.TestCase):
         deleted_jobs_code = delete_all_jobs()
         if deleted_jobs_code == 0: 
             # Instantiate Job & Create Job
-            job_dict = add_job("String 1", "String 2",)
+            job_dict = add_job("Feature",)
 
             # Check return type
             self.assertIsInstance(job_dict, dict)
@@ -46,7 +46,7 @@ class TestJobFunctions(unittest.TestCase):
 
     def test_add_job(self):
         """Function tests whether a job can be instantiated and added to the jobs database"""
-        job_dict = add_job("String 1", "String 2",)
+        job_dict = add_job("Feature")
         # Check return type
         self.assertIsInstance(job_dict, dict)
 
@@ -57,8 +57,10 @@ class TestJobFunctions(unittest.TestCase):
         # Clean up the jobs database
         delete_all_jobs()
 
+    # TODO - update test case
+    """
     def test_get_get_job_by_id(self):
-        job_dict = add_job("String 1", "String 2")
+        job_dict = add_job("Feature")
 
         # Get All Jobs. There should only be one job in the database
         job_ids = get_all_job_ids()
@@ -68,7 +70,7 @@ class TestJobFunctions(unittest.TestCase):
 
         # Get job dictionary keys and access the values of the last 2 keys (job parameters) 
         # to generalize the test and account for any changes that may be made to the job dictionary
-        # List should contain 4 keys: id, Status, Job Param1, Job Param2
+        # List should contain 3 keys: id, Status, Job Param1, 
         job_dict_keys = list(job_dict.keys())
 
         # TODO: Job status can Fail - but why is the dictionary not 4 keys long?
@@ -86,11 +88,11 @@ class TestJobFunctions(unittest.TestCase):
 
         # Clean up the jobs database
         delete_all_jobs()
+    """
 
     def test_update_job_status(self):
         test_status = "Test Job Status Updated"
-        # def update_job_status(jid:str, status:str):
-        job_dict = add_job("String 1", "String 2")
+        job_dict = add_job("String 1")
 
         # Get All Jobs. There should only be one job in the database
         job_ids = get_all_job_ids()

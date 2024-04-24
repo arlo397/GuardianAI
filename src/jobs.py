@@ -28,12 +28,11 @@ def _generate_jid():
     """Generate a pseudo-random identifier for a job."""
     return str(uuid.uuid4())
 
-def _instantiate_job(jid, status, param1, param2):
+def _instantiate_job(jid, status, param1):
     return({
                 'id': jid,
                 'Status': status,
-                'Param1': param1,
-                'Param2': param2 
+                'Graph Feature': param1,
             })
 
 def _save_job(jid, job_dict):
@@ -46,10 +45,10 @@ def _queue_job(jid:str):
     q.put(jid)
     return
 
-def add_job(start, end, status="Submitted"):
+def add_job(independent_variable, status="Submitted"):
     """Add a job to the redis queue."""
     jid:str = _generate_jid()
-    job_dict = _instantiate_job(jid, status, start, end)
+    job_dict = _instantiate_job(jid, status, independent_variable)
     _save_job(jid, job_dict)
     _queue_job(jid)
     return job_dict
@@ -75,9 +74,9 @@ def update_job_status(jid:str, status:str):
     else:
         raise Exception()
     
-def save_job_result(jid:str, result:dict):
-    successful_data_entry = resdb.set(jid, json.dumps(result))
-    logging.info("Job result stored to database. \n")
+def save_job_result(jid:str, image_result):
+    successful_data_entry = resdb.hset(jid, 'image', image_result)
+    logging.info(f"Job result stored to database. See '/job_{jid}_output.png. \n")
     return successful_data_entry
 
 def get_job_result(jid:str):

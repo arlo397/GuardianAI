@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-from flask import Flask, jsonify, abort, request, Response
-from jobs import logging, logging_level, format_str, rd, add_job, get_job_by_id, get_all_job_ids, get_job_result, delete_all_jobs
+from flask import Flask, jsonify, send_file, abort, request, Response
+from jobs import logging, logging_level, format_str, rd, resdb, add_job, get_job_by_id, get_all_job_ids, get_job_result, delete_all_jobs
 
 import json
 import pandas as pd
@@ -41,11 +41,12 @@ def data():
     """
     # POST - Put data into Redis
     if request.method == 'POST':
-        df = pd.read_csv(DATA_PATH)
+        df = pd.read_csv(DATA_PATH, sep=",")
         data:list = df.to_dict(orient='records')
+        
         # Iterate over data and store in redis database
         id_num = 0
-        for fraud_dict in data:
+        for fraud_dict in data:            
             # Input data into database as a string
             rd.set(id_num, json.dumps(fraud_dict))   
             id_num += 1         
@@ -234,7 +235,6 @@ def fraud_by_state() -> Response:
         logging.error(f"Error processing data: {e}")
         abort(500, description="Internal Server Error")
 
-
 # curl localhost:5173/ai_analysis -X GET
 @app.route('/ai_analysis', methods=['GET'])
 def ai_analysis():
@@ -268,17 +268,18 @@ def ai_analysis():
 
 # curl localhost:5173/jobs -X GET
 # curl localhost:5173/jobs -X DELETE
-# curl localhost:5173/jobs -X POST -d '{}' -H "Content-Type: application/json"
+# curl localhost:5173/jobs -X POST -d '{"Graph Feature": "gender"}' -H "Content-Type: application/json"
 @app.route("/jobs", methods = ['POST', 'GET', 'DELETE'])
 def jobs():
     if request.method == 'POST':
         client_submitted_data = request.get_json()
         if client_submitted_data is None:
-            return("[POST] /jobs route requires a JSON formatted data packet specifying .... Example: {'Some parameter':4, 'Some parameter': 5}")
+            return("[POST] /jobs route requires a JSON formatted data packet specifying .... Example: {'Graph Feature': 'gender'}")
+        elif ((len(client_submitted_data) == 1) and ('Graph Feature' in client_submitted_data)):
+            job_dict = add_job(client_submitted_data['Graph Feature'])
+            return job_dict
+        # TODO: Include other elif statements based on other jobs we want to support
         else: 
-            # Check the data the client posted
-            # job_dict = add_job(client_submitted_data['Year Modified Start'], client_submitted_data['Year Modified End'])
-            # return job_dict
             pass
     
     # List all existing job IDs
@@ -331,7 +332,16 @@ def get_job_output(job_id:str) -> dict:
         else: 
             error_string = "Current Job Status: " + job_description_dict['Status'] +  ". \n"
             return error_string
-        
+
+# curl localhost:5000/download/<jobid> --output output.png 
+# (User should redirect the output to file otherwise image will appear as binary file in console)    
+@app.route('/download/<jobid>', methods=['GET'])
+def download(job_id:str):
+    path = f'/app/job_{job_id}_output.png'
+    with open(path, 'wb') as f:
+        f.write(resdb.hget(job_id, 'image'))  
+    return send_file(path, mimetype='image/png', as_attachment=True)
+      
 # curl -X GET http://127.0.0.1:5173/help
 @app.route("/help", methods=['GET'])
 def get_help():
