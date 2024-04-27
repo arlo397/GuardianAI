@@ -1,5 +1,6 @@
 import api
 from io import BytesIO
+import orjson
 import pandas as pd
 import pytest
 from services import RedisDb
@@ -246,3 +247,40 @@ def test_clear_transaction_data_calls_abort_on_failure(mock_get_redis, mock_abor
   mock_redis.flushdb.assert_called_once_with()
   mock_abort.assert_called_once_with(500, 'Error clearing data from Redis.')
 
+@pytest.mark.parametrize('badarg,abortmatcher,should_check_redis', [
+  ('?limit=a', 'Optional limit parameter must be a valid positive integer.', False),
+  ('?offset=a', 'Optional offset parameter must be a valid nonnegative integer.', False),
+  ('?offset=5000', 'Optional offset parameter must be less than the length of the dataset.', True),
+  ('?limit=0', 'Optional limit parameter must be greater than zero.', True),
+])
+def test_get_transaction_data_view_calls_abort_on_bad_args(badarg: str, abortmatcher: str, should_check_redis: bool):
+  with patch('api.get_redis') as mock_get_redis:
+    mock_redis = Mock()
+    mock_redis.dbsize.return_value = 10
+    mock_get_redis.return_value = mock_redis
+    with patch('api.abort', side_effect=Exception) as mock_abort:
+      with api.app.test_request_context(badarg):
+        with pytest.raises(Exception):
+          api.get_transaction_data_view()
+      mock_abort.assert_called_once_with(400, abortmatcher)
+    if should_check_redis:
+      mock_get_redis.assert_called_once_with(RedisDb.TRANSACTION_DB)
+      mock_redis.dbsize.assert_called_once_with()
+
+@pytest.mark.parametrize('arg,expected_start_idx,expected_end_idx', [
+  ('', 0, 5),
+  ('?limit=2', 0, 2),
+  ('?offset=2', 2, 7),
+  ('?limit=3&offset=3', 3, 6),
+])
+def test_get_transaction_data_view_succeeds_with_good_args(arg: str, expected_start_idx: int, expected_end_idx: int):
+  fake_data_rows = [{'fake data point': idx} for idx in range(10)]
+  with patch('api.get_redis') as mock_get_redis:
+    mock_redis = Mock()
+    mock_redis.dbsize.return_value = 10
+    mock_redis.get.side_effect = lambda idx: orjson.dumps(fake_data_rows[idx])
+    mock_get_redis.return_value = mock_redis
+    with api.app.test_request_context(arg):
+      assert api.get_transaction_data_view() == fake_data_rows[expected_start_idx:expected_end_idx]
+    for idx in range(expected_start_idx, expected_end_idx):
+      mock_redis.get.assert_any_call(idx)
