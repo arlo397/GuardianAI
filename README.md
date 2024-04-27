@@ -23,10 +23,10 @@ The following software diagram captures the primary components and workflow of o
 - `Dockerfile`: Contains instructions for building a Docker image of our program
 - `docker-compose.yaml`: YAML file used to replace running the `docker build` and `docker run` commands for deploying a container. Orchestrates 3 services together: Redis Database, Flask App, Worker.
 - `src/api.py`: Main Python script that interacts with our fraud data set, hosts the Flask app that allows the user to query for information, as well as interacts with the Redis database.
-  - [GET] `/data`: Returns all data from Redis
-  - [POST] `/data`: Puts data into Redis
-  - [DELETE] `/data`: Deletes data in Redis
-  - [GET] `/data_example?limit=<int>`: Returns the first n records of the dataset. Defaults to the first 5 records if query parameter isn't provided.
+  - [GET] `/transaction_data`: Returns all data from Redis
+  - [POST] `/transaction_data`: Puts data into Redis
+  - [DELETE] `/transaction_data`: Deletes data in Redis
+  - [GET] `/transaction_data_view?limit=<int>&offset=<int>`: Returns a slice view of the data, beginning at the offset parameter (which defaults to zero) and ending at (offset + limit). limit parameter defaults to 5.
   - [GET] `/amt_analysis`: Returns statistical descriptions of the transaction amounts in the dataset.
   - [GET] `/amt_fraud_correlation`: Returns the correlation between transaction amount ('amt') and fraud status ('is_fraud')
   - [GET] `/jobs/<jobid>` : Returns all job information for a given JOB ID
@@ -89,27 +89,30 @@ While the service is up (after executing `docker-compose up`), you may curl the 
 
 **Curl Commands to Routes: `curl http://<ipaddress>:port/route`**
 
-
 1. **POST Data to Redis Database Endpoint**
-- **Description**: This endpoint stores the raw data into a Redis database that supports data persistence across container executions. POSTing the data takes a few minutes. 
+
+- **Description**: This endpoint stores the raw data into a Redis database that supports data persistence across container executions. POSTing the data takes a few minutes.
 
 ```shell
-curl -X POST localhost:5173/data 
+curl -X POST localhost:5173/data
 ```
 
 - _expected output_
+
 ```shell
-Data POSTED into Redis Database. 
+Data POSTED into Redis Database.
 ```
 
 2. **GET Data from Redis Database Endpoint**
-- **Description**: This endpoint retrieves all of the data stored from the Redis database as a list of dictionaries. GETting the data takes a few minutes. 
+
+- **Description**: This endpoint retrieves all of the data stored from the Redis database as a list of dictionaries. GETting the data takes a few minutes.
 
 ```shell
-curl -X GET localhost:5173/data 
+curl -X GET localhost:5173/data
 ```
 
 - _expected output_
+
 ```shell
 {
     "Unnamed: 0": 283599,
@@ -165,15 +168,17 @@ curl -X GET localhost:5173/data
 ```
 
 3. **DELETE Data from Redis Database Endpoint**
-- **Description**: This endpoint deletes all of the data stored in the Redis database. To execute other endpoints that rely on the data, `curl -X POST curl localhost:5173/data` must be re-executed. 
+
+- **Description**: This endpoint deletes all of the data stored in the Redis database. To execute other endpoints that rely on the data, `curl -X POST curl localhost:5173/data` must be re-executed.
 
 ```shell
 curl -X DELETE curl localhost:5173/data
 ```
 
 - _expected output_
+
 ```shell
-Data DELETED from Redis Database. 
+Data DELETED from Redis Database.
 ```
 
 4. **Data Example Endpoint**
@@ -246,9 +251,9 @@ curl -X GET 'localhost:5173/data_example?limit=2'
 
    - **Description**: This endpoint provides statistical summaries of the transaction amounts.
 
-    ```shell
-    curl localhost:5173/amt_analysis -X GET
-    ```
+   ```shell
+   curl localhost:5173/amt_analysis -X GET
+   ```
 
    - _expected output_
 

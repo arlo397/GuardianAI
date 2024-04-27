@@ -1,6 +1,5 @@
-from jobs import logging, logging_level, format_str, q, update_job_status, get_job_by_id, save_job_result
-from api import get_data
-
+from jobs import logging, logging_level, format_str, q, rd, resdb, update_job_status, get_job_by_id
+import json
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -20,13 +19,13 @@ def execute_job(job_id, columns, columns_name, labels):
     # Get JOB Description
     job_description_dict = get_job_by_id(job_id)
 
-    independent_variable = job_description_dict["Graph Feature"]
+    independent_variable = job_description_dict["graph_feature"]
     
     # Get Plot Independent Variable from Job Dictionary
     if independent_variable not in columns: 
         return ("Unavailable metric to plot. \n")
     
-    data = get_data()
+    data = [json.loads(rd.get(trans_id)) for trans_id in rd.keys()]
     if not data:
         logging.error("No data available. \n")
         return "No data available. \n", 404
@@ -101,7 +100,7 @@ def execute_job(job_id, columns, columns_name, labels):
     try:
         with open(f'/job_{job_id}_output.png', 'rb') as f:
             img = f.read()
-        successful_data_entry = save_job_result(job_id, img)
+            successful_data_entry = resdb.set(job_id, img)
     except:
         raise Exception
     
@@ -128,7 +127,7 @@ def work(job_id):
 
     if job_status_output is True:
         # Update Job Status
-        update_job_status(job_id, 'Completed')
+        update_job_status(job_id, 'completed')
     else: 
         update_job_status(job_id, 'Failure')
 

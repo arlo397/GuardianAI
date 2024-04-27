@@ -1,7 +1,9 @@
 flask
 hotqueue
+kaggle
 matplotlib
+orjson
 pandas
-pytest
 redis
 requests
+urllib3
