@@ -10,12 +10,22 @@ from sklearn.metrics import accuracy_score
 
 
 def train_model() -> RandomForestClassifier:
+    """
+    Train a RandomForestClassifier to predict fraud from transaction data.
+
+    The function handles data loading, preprocessing, model training, and evaluation.
+    It returns the feature importances extracted from the trained model.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing the feature names and their corresponding
+                      importances sorted in descending order.
+    """
     # Load data from a CSV file
     from api import get_data
-    datos = pd.DataFrame(get_data())
+    datas = pd.DataFrame(get_data())
     # Define the target variable and the features
-    y = datos["is_fraud"]
-    X = datos.drop("is_fraud", axis=1)
+    y = datas["is_fraud"]
+    X = datas.drop("is_fraud", axis=1)
 
     # Split the data into training and testing sets
     X_train_val, X_test, y_train_val, y_test = train_test_split(X, y, test_size=0.30, random_state=123)
@@ -55,16 +65,16 @@ def train_model() -> RandomForestClassifier:
     X_val["gender"] = X_val["gender"].replace({'M': 0, 'F': 1})
 
     # Binary encode categorical variables
-    columnas_a_encodear = ["merchant", "category", "street", "job", "city", "state"]
-    encoder = ce.BinaryEncoder(cols=columnas_a_encodear)
-    train_encoded = encoder.fit_transform(X_train[columnas_a_encodear])
-    val_encoded = encoder.transform(X_val[columnas_a_encodear])
-    test_encoded = encoder.transform(X_test[columnas_a_encodear])
+    columns = ["merchant", "category", "street", "job", "city", "state"]
+    encoder = ce.BinaryEncoder(cols=columns)
+    train_encoded = encoder.fit_transform(X_train[columns])
+    val_encoded = encoder.transform(X_val[columns])
+    test_encoded = encoder.transform(X_test[columns])
 
     # Drop the original categorical columns and join the encoded ones
-    X_train = X_train.drop(columns=columnas_a_encodear).join(train_encoded)
-    X_val = X_val.drop(columns=columnas_a_encodear).join(val_encoded)
-    X_test = X_test.drop(columns=columnas_a_encodear).join(test_encoded)
+    X_train = X_train.drop(columns=columns).join(train_encoded)
+    X_val = X_val.drop(columns=columns).join(val_encoded)
+    X_test = X_test.drop(columns=columns).join(test_encoded)
 
     # Train the RandomForestClassifier
     model = RandomForestClassifier(random_state=321)

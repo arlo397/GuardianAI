@@ -21,9 +21,11 @@ app = Flask(__name__)
 queue_none_handler = lambda: abort(500, 'Unable to interact with jobs - HotQueue not initialized.')
 redis_none_handler = lambda: abort(500, 'Unable to read/write interact with data - Redis not initialized.')
 
+
 def import_kaggle():
     from kaggle import KaggleApi
     return KaggleApi
+
 
 def get_queue() -> HotQueue:
     """
@@ -34,6 +36,7 @@ def get_queue() -> HotQueue:
     """
     return generic_get_queue(none_handler=queue_none_handler)
 
+
 def get_redis(db: RedisDb) -> Redis:
     """
     Gets Redis and raises a 500 error if it hasn't been initialized yet.
@@ -42,6 +45,7 @@ def get_redis(db: RedisDb) -> Redis:
         redis (Redis): The Redis instance.
     """
     return generic_get_redis(db, none_handler=redis_none_handler)
+
 
 # curl localhost:5173/transaction_data
 @app.route('/transaction_data')
@@ -58,6 +62,7 @@ def get_transaction_data_from_redis() -> list[dict[str, Any]]:
         for key in keys: pipe.get(key)
         data = pipe.execute()
     return [orjson.loads(d) for d in data]
+
 
 def _attempt_fetch_transaction_data_from_kaggle() -> Optional[pd.DataFrame]:
     """
@@ -102,6 +107,7 @@ def _attempt_fetch_transaction_data_from_kaggle() -> Optional[pd.DataFrame]:
         logging.error(e)
         return None
 
+
 def _attempt_read_transaction_data_from_disk() -> Optional[pd.DataFrame]:
     """
     Tries to read the data from disk at the path specified by the FALLBACK_DATASET_PATH
@@ -124,6 +130,7 @@ def _attempt_read_transaction_data_from_disk() -> Optional[pd.DataFrame]:
     except Exception as e:
         logging.error(e)
         return None
+
 
 # curl -X POST localhost:5173/transaction_data
 @app.route('/transaction_data', methods=['POST'])
@@ -152,13 +159,14 @@ def load_transaction_data_into_redis() -> tuple[str, int]:
     if df is None:
         abort(500, 'Unable to fetch data from Kaggle or from disk.')
     data = df.to_dict(orient='records')
-    
+
     with get_redis(RedisDb.TRANSACTION_DB).pipeline() as pipe:
         for idx, record in enumerate(data):
             pipe.set(idx, orjson.dumps(record))
         pipe.execute()
     logging.info('Data POSTED into Redis Database.')
     return 'OK', 200
+
 
 # curl -X DELETE localhost:5173/transaction_data
 @app.route('/transaction_data', methods=['DELETE'])
@@ -174,6 +182,7 @@ def clear_transaction_data() -> tuple[str, int]:
         logging.info('Data DELETED from Redis Database.')
         return 'OK', 200
     abort(500, 'Error clearing data from Redis.')
+
 
 # curl "localhost:5173/transaction_data_view?limit=2&offset=7"
 # curl localhost:5173/transaction_data_view
@@ -211,6 +220,7 @@ def get_transaction_data_view() -> list[dict[str, Any]]:
         abort(400, 'Optional limit parameter must be greater than zero.')
     return [orjson.loads(get_redis(RedisDb.TRANSACTION_DB).get(trans_id)) for trans_id in range(offset, offset + limit)]
 
+
 # curl localhost:5173/amt_analysis
 @app.route('/amt_analysis')
 def amt_analysis() -> dict[str, float]:
@@ -235,6 +245,7 @@ def amt_analysis() -> dict[str, float]:
         logging.error(f'Error computing statistics: {e}')
         abort(500, 'Error computing statistics.')
 
+
 # curl localhost:5173/amt_fraud_correlation
 @app.route('/amt_fraud_correlation')
 def compute_correlation() -> dict[str, dict[str, float]]:
@@ -258,9 +269,10 @@ def compute_correlation() -> dict[str, dict[str, float]]:
         logging.error(f'Error computing correlation: {e}')
         abort(500, 'Error computing correlation.')
 
+
 # curl localhost:5173/fraudulent_zipcode_info
 @app.route('/fraudulent_zipcode_info')
-def fraudulent_zipcode_info() -> dict[str, str|float]:
+def fraudulent_zipcode_info() -> dict[str, str | float]:
     """
     Identifies the zipcode with the highest number of fraudulent transactions, and retrieves its geographic location.
 
@@ -280,9 +292,10 @@ def fraudulent_zipcode_info() -> dict[str, str|float]:
 
         response = requests.get(
             f'http://dev.virtualearth.net/REST/v1/Locations/US/{most_fraudulent_zipcode}',
-            params={'key': BING_API_KEY }
+            params={'key': BING_API_KEY}
         )
-        if response.status_code == 200 and response.json() is not None and response.json()['resourceSets'][0]['resources']:
+        if response.status_code == 200 and response.json() is not None and response.json()['resourceSets'][0][
+            'resources']:
             location_data = data['resourceSets'][0]['resources'][0]
             lat, lon = location_data['point']['coordinates']
             google_maps_link = f'https://www.google.com/maps/search/?api=1&query={lat},{lon}'
@@ -299,6 +312,7 @@ def fraudulent_zipcode_info() -> dict[str, str|float]:
     except Exception as e:
         logging.error(f'Error omputing statistics or fetching location: {e}')
         abort(500, 'Error computing statistics or fetching location.')
+
 
 # curl localhost:5173/fraud_by_state
 @app.route('/fraud_by_state')
@@ -328,6 +342,7 @@ def fraud_by_state() -> dict[str, int]:
     except Exception as e:
         logging.error(f'Error processing data: {e}')
         abort(500, 'Error processing data.')
+
 
 # curl localhost:5173/ai_analysis
 @app.route('/ai_analysis')
@@ -360,6 +375,7 @@ def ai_analysis() -> dict:
         # The description provides more context about the error
         abort(500, 'Error processing data.')
 
+
 # curl localhost:5173/jobs
 @app.route('/jobs')
 def get_all_existing_job_ids() -> list[str]:
@@ -371,6 +387,7 @@ def get_all_existing_job_ids() -> list[str]:
         result (list[str]): A list containing all of the job ids.
     """
     return [j.decode('utf-8') for j in get_redis(RedisDb.JOB_DB).lrange(REDIS_JOB_IDS_KEY, 0, -1)]
+
 
 # curl -X DELETE localhost:5173/jobs -X
 @app.route('/jobs', methods=['DELETE'])
@@ -384,6 +401,7 @@ def clear_all_jobs() -> tuple[str, int]:
     """
     if get_redis(RedisDb.JOB_DB).flushdb(): return 'OK', 200
     abort(500, 'Error flushing jobs db.')
+
 
 # curl -X POST localhost:5173/jobs -d '{"graph_feature": "gender"}' -H "Content-Type: application/json"
 @app.route('/jobs', methods=['POST'])
@@ -399,7 +417,8 @@ def post_job() -> dict[str, str]:
     """
     client_submitted_data = request.get_json(silent=True)
     if client_submitted_data:
-        if len(client_submitted_data) == 1 and 'graph_feature' in client_submitted_data:
+        if isinstance(client_submitted_data, dict) and len(
+                client_submitted_data) == 1 and 'graph_feature' in client_submitted_data:
             if client_submitted_data['graph_feature'] in PLOTTING_DATA_COLS:
                 job_id = str(uuid4())
                 get_redis(RedisDb.JOB_DB).set(job_id, orjson.dumps({
@@ -411,14 +430,16 @@ def post_job() -> dict[str, str]:
                 return {'job_id': job_id}
             abort(400, f'JSON param "graph_feature" must be included in {PLOTTING_DATA_COLS}')
         abort(400, 'JSON data params must be an object with a single key: "graph_feature".')
-    abort(400, 'JSON data params must be delivered in the body with the POST request. Param details are specified in the README file.')
+    abort(400,
+          'JSON data params must be delivered in the body with the POST request. Param details are specified in the README file.')
+
 
 # curl http://127.0.0.1:5173/jobs/<id>
 @app.route('/jobs/<id>')
 def get_job_information(id: str) -> dict[str, str]:
     """
     Returns information about the specified job id.
-    Gives a 500 erorr if Redis hasn't been initialized yet.
+    Gives a 500 error if Redis hasn't been initialized yet.
 
     Args:
         id (str): The job ID to search Redis for.
@@ -430,9 +451,10 @@ def get_job_information(id: str) -> dict[str, str]:
         abort(400, 'Invalid job id.')
     return orjson.loads(job_info)
 
+
 # curl http://127.0.0.1:5173/results/<id>
 @app.route('/results/<id>')
-def get_job_output(id: str) -> Any:
+def get_job_result(id: str) -> Any:
     """
     Returns the job result as a image file download.
     Gives a 400 bad request error if the job hasn't been completed yet.
@@ -443,19 +465,26 @@ def get_job_output(id: str) -> Any:
     Returns:
         result (Any): The png file download.
     """
-    if get_job_information(id)['status'] == 'completed':
-        result = get_redis(RedisDb.JOB_RESULTS_DB).get(id)
-        if result is None:
-            logging.error(f'Job marked as completed but no result found in DB. Job no {id}')
-            abort(500, 'Job marked as completed but no result found in DB.')
-        return send_file(BytesIO(result), mimetype='image/png', as_attachment=True, attachment_filename=f'plot {id}.png')
-    abort(400, 'Job is not complete.')
+    job_info = get_job_information(id)
+    if 'status' in job_info:
+        if job_info['status'] == 'completed':
+            result = get_redis(RedisDb.JOB_RESULTS_DB).get(id)
+            if result is None:
+                logging.error(f'Job marked as completed but no result found in DB. Job no {id}')
+                abort(500, 'Job marked as completed but no result found in DB.')
+            return send_file(BytesIO(result), mimetype='image/png', as_attachment=True,
+                             attachment_filename=f'plot {id}.png')
+        abort(400, 'Job is not complete.')
+    logging.error(f'Job {id} is malformed. {job_info}')
+    abort(500, 'Malformed job.')
+
 
 # curl http://127.0.0.1:5173/help
 @app.route('/help')
 def get_help():
     # TODO: After completing all of the routes, write description for each route
     pass
+
 
 def main():
     """
@@ -467,6 +496,9 @@ def main():
     logging.info('Redis and HotQueue instances attached, serving clients...')
     app.run(debug=True, host='0.0.0.0', port=5173)
 
+
 if __name__ == '__main__':
-    logging.basicConfig(format=f'[%(asctime)s {socket.gethostname()}] %(filename)s:%(funcName)s:%(lineno)s - %(levelname)s: %(message)s', level=get_log_level())
+    logging.basicConfig(
+        format=f'[%(asctime)s {socket.gethostname()}] %(filename)s:%(funcName)s:%(lineno)s - %(levelname)s: %(message)s',
+        level=get_log_level())
     main()
