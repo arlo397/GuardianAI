@@ -399,7 +399,7 @@ def post_job() -> dict[str, str]:
     """
     client_submitted_data = request.get_json(silent=True)
     if client_submitted_data:
-        if len(client_submitted_data) == 1 and 'graph_feature' in client_submitted_data:
+        if isinstance(client_submitted_data, dict) and len(client_submitted_data) == 1 and 'graph_feature' in client_submitted_data:
             if client_submitted_data['graph_feature'] in ALL_DATA_COLS:
                 job_id = str(uuid4())
                 get_redis(RedisDb.JOB_DB).set(job_id, orjson.dumps({
@@ -418,7 +418,7 @@ def post_job() -> dict[str, str]:
 def get_job_information(id: str) -> dict[str, str]:
     """
     Returns information about the specified job id.
-    Gives a 500 erorr if Redis hasn't been initialized yet.
+    Gives a 500 error if Redis hasn't been initialized yet.
 
     Args:
         id (str): The job ID to search Redis for.
@@ -432,7 +432,7 @@ def get_job_information(id: str) -> dict[str, str]:
 
 # curl http://127.0.0.1:5173/results/<id>
 @app.route('/results/<id>')
-def get_job_output(id: str) -> Any:
+def get_job_result(id: str) -> Any:
     """
     Returns the job result as a image file download.
     Gives a 400 bad request error if the job hasn't been completed yet.
@@ -443,13 +443,17 @@ def get_job_output(id: str) -> Any:
     Returns:
         result (Any): The png file download.
     """
-    if get_job_information(id)['status'] == 'completed':
-        result = get_redis(RedisDb.JOB_RESULTS_DB).get(id)
-        if result is None:
-            logging.error(f'Job marked as completed but no result found in DB. Job no {id}')
-            abort(500, 'Job marked as completed but no result found in DB.')
-        return send_file(BytesIO(result), mimetype='image/png', as_attachment=True, attachment_filename=f'plot {id}.png')
-    abort(400, 'Job is not complete.')
+    job_info = get_job_information(id)
+    if 'status' in job_info:
+        if job_info['status'] == 'completed':
+            result = get_redis(RedisDb.JOB_RESULTS_DB).get(id)
+            if result is None:
+                logging.error(f'Job marked as completed but no result found in DB. Job no {id}')
+                abort(500, 'Job marked as completed but no result found in DB.')
+            return send_file(BytesIO(result), mimetype='image/png', as_attachment=True, attachment_filename=f'plot {id}.png')
+        abort(400, 'Job is not complete.')
+    logging.error(f'Job {id} is malformed. {job_info}')
+    abort(500, 'Malformed job.')
 
 # curl http://127.0.0.1:5173/help
 @app.route('/help')
