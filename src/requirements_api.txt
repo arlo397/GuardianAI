@@ -1,7 +1,6 @@
 flask
 hotqueue
 kaggle
-matplotlib
 orjson
 pandas
 redis

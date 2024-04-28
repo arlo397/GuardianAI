@@ -1,44 +1,34 @@
+from socket import gethostname
+from hotqueue import HotQueue
+from services import get_log_level
+from api import *
+
 import json
 import os
 import logging
 import redis
-from socket import gethostname
-from hotqueue import HotQueue
+import socket
 
-logging_level = os.getenv('LOG_LEVEL')
 format_str = f'[%(asctime)s {gethostname()}] %(filename)s:%(funcName)s:%(lineno)s - %(levelname)s: %(message)s'
-logging.basicConfig(filename='logger.log', format=format_str, level=logging.DEBUG, filemode='w')
-
-_redis_ip = os.getenv('REDIS_IP')
-_redis_port = 6379
-
-try: 
-    rd = redis.Redis(host=_redis_ip, port=_redis_port, db=0)      # Raw Data Database
-    q = HotQueue("queue", host=_redis_ip, port=_redis_port, db=1) # Job Ids in Queue to be consumed by worker
-    jdb = redis.Redis(host=_redis_ip, port=_redis_port, db=2)     # Jobs Database storing Job information
-    resdb = redis.Redis(host=_redis_ip, port=_redis_port, db=3)   # Results Database storing results from worker
-except Exception as e: 
-    logging.info("Connect Exception has occured while trying to connect to the databases")
-    rd = None
-    q = None
-    jdb = None
-    resdb = None
+logging.basicConfig(format=f'[%(asctime)s {socket.gethostname()}] %(filename)s:%(funcName)s:%(lineno)s - %(levelname)s: %(message)s', level=get_log_level())
 
 def _save_job(jid, job_dict):
     """Save a job object in the Redis database."""
-    jdb.set(jid, json.dumps(job_dict))
-    return
+    get_redis(RedisDb.JOB_DB).set(jid, orjson.dumps(job_dict))
+    return 
 
 def get_job_by_id(jid:str):
     """Return job dictionary given jid"""
-    return json.loads(jdb.get(jid))
+    return get_redis(RedisDb.JOB_DB).get(jid)
 
-def get_all_job_ids():
+def get_all_job_ids() -> list[str]:
     """Return list of Job ids"""
-    job_ids = []
-    for id in jdb.keys():
-        job_ids.append(id.decode())
-    return job_ids
+    return [j.decode('utf-8') for j in get_redis(RedisDb.JOB_DB).lrange(REDIS_JOB_IDS_KEY, 0, -1)]
+
+def delete_all_jobs():
+    """Deletes all jobs from jobs database"""
+    if get_redis(RedisDb.JOB_DB).flushdb(): return 'OK', 200
+    abort(500, 'Error flushing jobs db.')
 
 def update_job_status(jid:str, status:str):
     """Update the status of job with job id `jid` to status `status`."""

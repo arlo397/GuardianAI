@@ -33,7 +33,7 @@ The following software diagram captures the primary components and workflow of o
   - [GET] `/jobs`: Returns all existing JOB IDs
   - [POST] `/jobs`: Creates a new job with a unique identifier (uuid)
     - The `/jobs` POST request must include a data packet in JSON format which is stored along with the job information. For our application, the client must provide the following JSON formatted data:
-      '{"Year Modified Start": <start_year>, "Year Modified End": <end_year>}' -H "Content-Type: application/json"
+      '{"graph_feature": "gender"}' -H "Content-Type: application/json"
   - [DELETE] `/jobs`: Deletes all jobs
   - [GET] `/results/<jobid>`: Return requested job result in the form of a JSON dictionary. If the job has not yet been finished, the api returns a message indicating so.
 - `src/jobs.py`: Initializes databases and provides the functionality to create/submit/put jobs on the queue.

@@ -4,4 +4,4 @@ WORKDIR /app
 COPY src/requirements_worker.txt ./
 RUN pip install -r requirements_worker.txt
 
-COPY src/jobs.py src/worker.py ./
+COPY src/services.py src/worker.py ./

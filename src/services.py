@@ -19,11 +19,8 @@ class RedisDb(Enum):
   JOB_DB = 2
   JOB_RESULTS_DB = 3
 
-ALL_DATA_COLS = [
-    'trans_date_trans_time', 'cc_num','merchant', 'category', 'amt', 'first', 'last',
-    'gender', 'street', 'city', 'state', 'zip', 'lat', 'long', 'city_pop', 'job', 'dob',
-    'trans_num', 'unix_time', 'merch_lat', 'merch_long', 'is_fraud',
-]
+PLOTTING_DATA_COLS =  ['trans_month','trans_dayOfWeek','gender','category']
+PLOTTING_DATA_COLS_NAMES = ['Month','Day of Week','Gender','Transaction Category']
 
 def init_backend_services():
   """
@@ -47,7 +44,7 @@ def init_backend_services():
     waits += 1
   _queue = HotQueue(REDIS_JOB_QUEUE_KEY, host=redis_addr, db=RedisDb.TRANSACTION_DB.value)
 
-def get_redis(db: RedisDb, none_handler: Optional[Callable[[], None]] = None) -> Redis:
+def get_redis(db: int, none_handler: Optional[Callable[[], None]] = None) -> Redis:
   """
   Returns the Redis instance.
   Runs the none_handler and returns None if Redis hasn't been initialized yet.

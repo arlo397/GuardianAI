@@ -1,5 +1,7 @@
-from jobs import logging, logging_level, format_str, q, rd, resdb, update_job_status, get_job_by_id
-import json
+from services import PLOTTING_DATA_COLS, PLOTTING_DATA_COLS_NAMES, RedisDb, get_queue, get_redis
+from typing import Any
+
+import orjson
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -9,25 +11,33 @@ warnings.filterwarnings('ignore')
 sns.color_palette("pastel")
 sns.set_palette("pastel")
 
-logging.basicConfig(filename='logger.log', format=format_str, level=logging_level, filemode='w')
+q = get_queue()
 
-columns = ['trans_month','trans_dayOfWeek','gender','category']
-columns_name = ['Month','Day of Week','Gender','Transaction Category']
-labels = ['Not Fraud','Fraud']
+def get_transaction_data_from_redis() -> list[dict[str, Any]]:
+    """
+    Returns all the data currently stored in Redis.
+    This will be an empty list if there is no data in Redis.
 
-def execute_job(job_id, columns, columns_name, labels):
-    # Get JOB Description
-    job_description_dict = get_job_by_id(job_id)
+    Returns:
+        result (list[dict[str, Any]]): The data stored in Redis.
+    """
+    keys = get_redis(RedisDb.TRANSACTION_DB).keys()
+    with get_redis(RedisDb.TRANSACTION_DB).pipeline() as pipe:
+        for key in keys: pipe.get(key)
+        data = pipe.execute()
+    return [orjson.loads(d) for d in data]
 
+def execute_job(job_id, job_description_dict:dict, labels=['Not Fraud','Fraud']):
+    # Get Plot Independent Variable from Job Dictionary
     independent_variable = job_description_dict["graph_feature"]
     
-    # Get Plot Independent Variable from Job Dictionary
-    if independent_variable not in columns: 
+    # Check if worker is compatible to plot feature
+    if independent_variable not in PLOTTING_DATA_COLS: 
         return ("Unavailable metric to plot. \n")
     
-    data = [json.loads(rd.get(trans_id)) for trans_id in rd.keys()]
+    data = get_transaction_data_from_redis()
+    
     if not data:
-        logging.error("No data available. \n")
         return "No data available. \n", 404
  
     df = pd.DataFrame(data)
@@ -42,8 +52,8 @@ def execute_job(job_id, columns, columns_name, labels):
     
     # Get Column Name from Independent Variable 
     # Get the index of an element
-    index = columns.index(independent_variable)
-    independent_variable_str = columns_name[index]
+    index = PLOTTING_DATA_COLS.index(independent_variable)
+    independent_variable_str = PLOTTING_DATA_COLS_NAMES[index]
     
     fig, axes = plt.subplots(1, 2, figsize=(10, 6)) # (width, height)
     plt.suptitle("Distribution of Transaction by " + independent_variable_str, fontsize=20, fontweight='bold')
@@ -91,7 +101,7 @@ def execute_job(job_id, columns, columns_name, labels):
             ax.legend(loc='upper left')
             ax.set_title(f"{labels[i]}")
         else: 
-            return("Error. \n")
+            return("Error. This should not happen. \n")
 
     # Save Plot briefly in container before you move it to Redis
     plt.savefig(f'/job_{job_id}_output.png') 
@@ -100,15 +110,15 @@ def execute_job(job_id, columns, columns_name, labels):
     try:
         with open(f'/job_{job_id}_output.png', 'rb') as f:
             img = f.read()
-            successful_data_entry = resdb.set(job_id, img)
+        #successful_data_entry = get_redis(RedisDb.JOB_RESULTS_DB).set(job_id, img)
+        successful_data_entry = get_redis(RedisDb.JOB_RESULTS_DB).heset(job_id, 'image', img)
+
     except:
         raise Exception
     
     if successful_data_entry is True: 
-        logging.info("Job finished executing with success. \n")
         return True
     else: 
-        logging.warning("Job failed to finish with success. \n")
         return False
     
 @q.worker
@@ -117,19 +127,33 @@ def work(job_id):
     Args:
         job_id (int): Unique identifier for Job stored in database
     """
-    # Decorator pops job off from queue 
+    # Get JOB Description
+    job_description_dict = get_redis(RedisDb.JOB_DB).get(id)
+    
+    if job_description_dict is None:
+        return ('Invalid job id. \n')
 
     # Update Job Status
-    update_job_status(job_id, 'In Progress')
+    get_redis(RedisDb.JOB_RESULTS_DB).set(job_id, orjson.dumps({
+            'status': 'In Progress',
+            'graph_feature': job_description_dict['graph_feature'],
+        }))
 
     # Start Job
-    job_status_output = execute_job(job_id, columns, columns_name, labels)
+    job_status_output = execute_job(job_id, job_description_dict)
 
     if job_status_output is True:
         # Update Job Status
-        update_job_status(job_id, 'completed')
+        get_redis(RedisDb.JOB_RESULTS_DB).set(job_id, orjson.dumps({
+            'status': 'completed',
+            'graph_feature': job_description_dict['graph_feature'],
+        }))
     else: 
-        update_job_status(job_id, 'Failure')
+        # Update Job Status
+        get_redis(RedisDb.JOB_RESULTS_DB).set(job_id, orjson.dumps({
+            'status': 'failure',
+            'graph_feature': job_description_dict['graph_feature'],
+        }))
 
 # Execute Queue Worker
 work()

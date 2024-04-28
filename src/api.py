@@ -7,7 +7,7 @@ from os import environ
 import pandas as pd
 from redis import Redis
 import requests
-from services import ALL_DATA_COLS, REDIS_JOB_IDS_KEY, RedisDb, get_log_level, init_backend_services, get_queue as generic_get_queue, get_redis as generic_get_redis
+from services import PLOTTING_DATA_COLS, REDIS_JOB_IDS_KEY, RedisDb, get_log_level, init_backend_services, get_queue as generic_get_queue, get_redis as generic_get_redis
 import socket
 from typing import Any, Optional
 import urllib3
@@ -400,7 +400,7 @@ def post_job() -> dict[str, str]:
     client_submitted_data = request.get_json(silent=True)
     if client_submitted_data:
         if len(client_submitted_data) == 1 and 'graph_feature' in client_submitted_data:
-            if client_submitted_data['graph_feature'] in ALL_DATA_COLS:
+            if client_submitted_data['graph_feature'] in PLOTTING_DATA_COLS:
                 job_id = str(uuid4())
                 get_redis(RedisDb.JOB_DB).set(job_id, orjson.dumps({
                     'status': 'queued',
@@ -409,7 +409,7 @@ def post_job() -> dict[str, str]:
                 get_redis(RedisDb.JOB_DB).rpush(REDIS_JOB_IDS_KEY, job_id)
                 get_queue().put(job_id)
                 return {'job_id': job_id}
-            abort(400, f'JSON param "graph_feature" must be included in {ALL_DATA_COLS}')
+            abort(400, f'JSON param "graph_feature" must be included in {PLOTTING_DATA_COLS}')
         abort(400, 'JSON data params must be an object with a single key: "graph_feature".')
     abort(400, 'JSON data params must be delivered in the body with the POST request. Param details are specified in the README file.')
 
