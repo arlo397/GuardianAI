@@ -45,7 +45,7 @@ def init_backend_services():
       logging.info('Waiting for Redis to initialize...')
     sleep(0.1)
     waits += 1
-  _queue = HotQueue(REDIS_JOB_QUEUE_KEY, host=redis_addr, db=RedisDb.TRANSACTION_DB.value)
+  _queue = HotQueue(REDIS_JOB_QUEUE_KEY, host=redis_addr, db=RedisDb.QUEUE_DB.value)
 
 def get_redis(db: RedisDb, none_handler: Optional[Callable[[], None]] = None) -> Redis:
   """
