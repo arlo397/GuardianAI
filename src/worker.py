@@ -1,4 +1,4 @@
-from services import PLOTTING_DATA_COLS, PLOTTING_DATA_COLS_NAMES, RedisDb, get_log_level, get_queue, get_redis
+from services import PLOTTING_DATA_COLS, PLOTTING_DATA_COLS_NAMES, RedisDb, get_log_level, get_queue, get_redis, init_backend_services
 from typing import Any
 
 import orjson
@@ -175,7 +175,9 @@ def work(job_id):
         }))
 
 def main():
-    logging.info("Entered worker.py main ...")
+    logging.info('Credit Card Fraud Transaction Worker service started')
+    init_backend_services()
+    logging.info('Redis and HotQueue instances attached, beginning work...')
     work()
 
 if __name__ == '__main__':
