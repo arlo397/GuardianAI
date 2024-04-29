@@ -7,7 +7,8 @@ from os import environ
 import pandas as pd
 from redis import Redis
 import requests
-from services import PLOTTING_DATA_COLS, REDIS_JOB_IDS_KEY, RedisDb, get_log_level, init_backend_services, get_queue as generic_get_queue, get_redis as generic_get_redis
+from services import PLOTTING_DATA_COLS, REDIS_JOB_IDS_KEY, RedisDb, get_log_level, init_backend_services, \
+      get_queue as generic_get_queue, get_redis as generic_get_redis
 import socket
 from typing import Any, Optional
 import urllib3
@@ -20,7 +21,6 @@ app = Flask(__name__)
 
 queue_none_handler = lambda: abort(500, 'Unable to interact with jobs - HotQueue not initialized.')
 redis_none_handler = lambda: abort(500, 'Unable to read/write interact with data - Redis not initialized.')
-
 
 def import_kaggle():
     from kaggle import KaggleApi
