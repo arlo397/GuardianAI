@@ -16,7 +16,10 @@ This project is essential as it tackles the pressing issue of credit card fraud 
 
 ### Software Diagram
 
-The following software diagram captures the primary components and workflow of our system...
+The following software diagram captures the primary components and workflow of our system. The diagram illustrates how data is queried from Kaggle and stored in a Redis Database that is presisited via frequenct saving to the local system harddrive. Moreover, the diagram depicts the user's interaction with various routes via the Web Application, facilitating data access and job request submissions processed by the `Worker`. This entire process is encapsulated and deployed within a Docker container, seamlessly orchestrated by a Kubernetes cluster.
+
+![alt text](https://github.com/arlo397/GuardianAI/blob/main/softwareDiagram.png)
+
 
 ### Description of Folder Contents
 
