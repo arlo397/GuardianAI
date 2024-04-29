@@ -1,16 +1,21 @@
-from services import PLOTTING_DATA_COLS, PLOTTING_DATA_COLS_NAMES, RedisDb, get_queue, get_redis
+from services import PLOTTING_DATA_COLS, PLOTTING_DATA_COLS_NAMES, RedisDb, get_log_level, get_queue, get_redis
 from typing import Any
 
 import orjson
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+import logging
+import socket
+import time
 import warnings
 
 warnings.filterwarnings('ignore')
 sns.color_palette("pastel")
 sns.set_palette("pastel")
 
+# Tried adding timer here so that init_backend_services() would have initialized queue already
+time.sleep(20)
 q = get_queue()
 
 def get_transaction_data_from_redis() -> list[dict[str, Any]]:
@@ -110,13 +115,26 @@ def execute_job(job_id, job_description_dict:dict, labels=['Not Fraud','Fraud'])
     try:
         with open(f'/job_{job_id}_output.png', 'rb') as f:
             img = f.read()
-        #successful_data_entry = get_redis(RedisDb.JOB_RESULTS_DB).set(job_id, img)
-        successful_data_entry = get_redis(RedisDb.JOB_RESULTS_DB).heset(job_id, 'image', img)
+        
+        successful_data_entry = get_redis(RedisDb.JOB_RESULTS_DB).hset(job_id, 'image', img)
+    
+    except FileNotFoundError:
+        # Handle the case where the file doesn't exist
+        print(f"Error: File '/job_{job_id}_output.png' not found")
+
+    except IOError as e:
+        # Handle general I/O errors
+        print(f"Error: I/O error occurred - {e}")
+
+    except Exception as e:
+        # Catch any other unexpected exceptions and handle them appropriately
+        print(f"An unexpected error occurred: {e}")
+        raise
 
     except:
         raise Exception
     
-    if successful_data_entry is True: 
+    if successful_data_entry == 1:  
         return True
     else: 
         return False
@@ -127,6 +145,7 @@ def work(job_id):
     Args:
         job_id (int): Unique identifier for Job stored in database
     """
+    logging.info("Popping job off of queue ... ")
     # Get JOB Description
     job_description_dict = get_redis(RedisDb.JOB_DB).get(id)
     
@@ -155,5 +174,12 @@ def work(job_id):
             'graph_feature': job_description_dict['graph_feature'],
         }))
 
-# Execute Queue Worker
-work()
+def main():
+    logging.info("Entered worker.py main ...")
+    work()
+
+if __name__ == '__main__':
+    logging.basicConfig(
+        format=f'[%(asctime)s {socket.gethostname()}] %(filename)s:%(funcName)s:%(lineno)s - %(levelname)s: %(message)s',
+        level=get_log_level())
+    main()

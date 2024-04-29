@@ -425,7 +425,7 @@ curl -X GET 'localhost:5173/data_example?limit=2'
    - _expected output_
 
      ```shell
-        [af7c1fe6-d669-414e-b066-e9733f0de7a8, 08c71152-c552-42e7-b094-f510ff44e9cb]
+      [af7c1fe6-d669-414e-b066-e9733f0de7a8, 08c71152-c552-42e7-b094-f510ff44e9cb]
      ```
 
 11. **Clear Jobs Endpoint**
@@ -437,11 +437,9 @@ curl -X GET 'localhost:5173/data_example?limit=2'
      ```
 
    - _expected output_
-
-
-    ```shell
-      OK
-    ```
+     ```shell
+     OK
+     ```
 
 12. **Generate Graph for Feature Endpoint**
 - **Description**: This endpoint initializes a job based on the user's input in JSON format, specifically their graph feature preferences. The job is then queued for processing, allowing the worker to generate a PNG plot. Once generated, the plot can be downloaded and viewed by the user. 
