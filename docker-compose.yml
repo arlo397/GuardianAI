@@ -13,8 +13,8 @@ services:
     environment:
       REDIS_IP: redis
       LOG_LEVEL: DEBUG
-      KAGGLE_USERNAME: reemfashho
-      KAGGLE_KEY: 34287c256aa613dcd1f6dbec4e57f4cf
+      KAGGLE_USERNAME: username
+      KAGGLE_KEY: key
       KAGGLE_OWNER: kelvinkelue
       KAGGLE_DATASET: credit-card-fraud-prediction
       KAGGLE_FILENAME: fraud test.csv
