@@ -431,7 +431,7 @@ def post_job() -> dict[str, str]:
             abort(400, f'JSON param "graph_feature" must be included in {PLOTTING_DATA_COLS}')
         abort(400, 'JSON data params must be an object with a single key: "graph_feature".')
     abort(400,
-          'JSON data params must be delivered in the body with the POST request. Param details are specified in the README file.')
+            'JSON data params must be delivered in the body with the POST request. Param details are specified in the README file.')
 
 
 # curl http://127.0.0.1:5173/jobs/<id>
@@ -473,7 +473,7 @@ def get_job_result(id: str) -> Any:
                 logging.error(f'Job marked as completed but no result found in DB. Job no {id}')
                 abort(500, 'Job marked as completed but no result found in DB.')
             return send_file(BytesIO(result), mimetype='image/png', as_attachment=True,
-                             attachment_filename=f'plot {id}.png')
+                            attachment_filename=f'plot {id}.png')
         abort(400, 'Job is not complete.')
     logging.error(f'Job {id} is malformed. {job_info}')
     abort(500, 'Malformed job.')
