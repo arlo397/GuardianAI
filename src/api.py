@@ -389,7 +389,7 @@ def get_all_existing_job_ids() -> list[str]:
     return [j.decode('utf-8') for j in get_redis(RedisDb.JOB_DB).lrange(REDIS_JOB_IDS_KEY, 0, -1)]
 
 
-# curl -X DELETE localhost:5173/jobs -X
+# curl -X DELETE localhost:5173/jobs 
 @app.route('/jobs', methods=['DELETE'])
 def clear_all_jobs() -> tuple[str, int]:
     """

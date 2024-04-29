@@ -20,7 +20,6 @@ The following software diagram captures the primary components and workflow of o
 
 ![alt text](https://github.com/arlo397/GuardianAI/blob/main/softwareDiagram.png)
 
-
 ### Description of Folder Contents
 
 - `Dockerfile`: Contains instructions for building a Docker image of our program
@@ -415,9 +414,101 @@ curl -X GET 'localhost:5173/data_example?limit=2'
      }
      ```
 
-10. **Insert New Endpoint**
+10. **Retrieve All Existing Jobs Endpoint**
 
-11. **Insert New Endpoint**
+ - **Description**: This endpoint returns all of the existing job uuids from the database. 
+
+     ```shell
+     curl localhost:5173/jobs -X GET
+     ```
+
+   - _expected output_
+
+     ```shell
+        [af7c1fe6-d669-414e-b066-e9733f0de7a8, 08c71152-c552-42e7-b094-f510ff44e9cb]
+     ```
+
+11. **Clear Jobs Endpoint**
+
+   - **Description**: This endpoint clears all jobs from the jobs database. 
+
+     ```shell
+     curl -X DELETE localhost:5173/jobs 
+     ```
+
+   - _expected output_
+
+
+    ```shell
+      OK
+    ```
+
+12. **Generate Graph for Feature Endpoint**
+- **Description**: This endpoint initializes a job based on the user's input in JSON format, specifically their graph feature preferences. The job is then queued for processing, allowing the worker to generate a PNG plot. Once generated, the plot can be downloaded and viewed by the user. 
+
+    Based on what information the user desires to analyze, they may submit one of the following graph features which will be utilized as the independent variable of the generated graph. If the user fails to submit a feature from the feature options listed below or submits the `curl` command incorrectly, a respective error message with intructions to correct the `POST` request will be generated. 
+    
+    Feature Options for Graphing: ['trans_month','trans_dayOfWeek','gender','category']
+
+     ```shell
+     curl -X POST localhost:5173/jobs -d '{"graph_feature": "gender"}' -H "Content-Type: application/json"
+     ```
+
+   - _expected output_
+
+    ```shell
+      {"job_id": "af7c1fe6-d669-414e-b066-e9733f0de7a8"}
+    ```
+
+13. **Retrieve Job Status Endpoint**
+- **Description**: This endpoint provides details about a specified job ID, facilitating users in querying the status of submitted jobs and recalling the feature intended for plotting. 
+
+     ```shell
+     curl http://127.0.0.1:5173/jobs/ af7c1fe6-d669-414e-b066-e9733f0de7a8
+     ```
+
+   - _expected output_
+
+    ```shell
+    {
+      'status': 'queued',
+      'graph_feature': 'gender',
+    }
+    ```
+
+14. **Retrieve Graph Image from Submitted Job**
+- **Description**: This endpoint returns a png file download of the graphs requested from the user. 
+    ```shell
+    curl http://127.0.0.1:5173/results/af7c1fe6-d669-414e-b066-e9733f0de7a8
+    ```
+   - _expected output_
+
+   ```shell
+
+
+  ```
+
+  Graphs: 
+  ![alt text](https://github.com/arlo397/GuardianAI/blob/main/trans_month.png)
+
+  ![alt text](https://github.com/arlo397/GuardianAI/blob/main/trans_week.png)
+
+  ![alt text](https://github.com/arlo397/GuardianAI/blob/main/trans_category.png)
+
+  ![alt text](https://github.com/arlo397/GuardianAI/blob/main/gender.png)
+
+
+15. **Informational Help Endpoint**
+- **Description**: This endpoint returns a description of all of the routes as well as an example curl command.  
+ ```shell
+    curl http://127.0.0.1:5173/help
+  ```
+
+  - _expected output_
+
+  ```
+
+  ```
 
 #### Instructions on How to Run Test Cases
 
