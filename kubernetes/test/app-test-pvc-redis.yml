@@ -1,0 +1,28 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-pvc-redis-deployment
+  labels:
+    app: redis-pvc-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis-pvc-app
+  template:
+    metadata:
+      labels:
+        app: redis-pvc-app
+    spec:
+      containers:
+        - name: redis
+          image: ubuntu:22.04
+          command: []
+          volumeMounts:
+          - name: redis-<username>-data
+            mountPath: "/data"
+      volumes:
+      - name: redis-<username>-data
+        persistentVolumeClaim:
+          claimName: redis-<username>-data
