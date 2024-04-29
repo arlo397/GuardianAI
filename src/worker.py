@@ -1,22 +1,32 @@
-from services import PLOTTING_DATA_COLS, PLOTTING_DATA_COLS_NAMES, RedisDb, get_log_level, get_queue, get_redis, init_backend_services
-from typing import Any
+from services import PLOTTING_DATA_COLS, PLOTTING_DATA_COLS_NAMES, RedisDb, get_log_level, get_queue, get_redis as generic_get_redis, init_backend_services
 
+from hotqueue import HotQueue
+import logging
+import matplotlib.pyplot as plt
 import orjson
 import pandas as pd
+from redis import Redis
 import seaborn as sns
-import matplotlib.pyplot as plt
-import logging
 import socket
-import time
+from typing import Any
 import warnings
 
-warnings.filterwarnings('ignore')
-sns.color_palette("pastel")
-sns.set_palette("pastel")
+def _on_no_queue():
+    logging.error('get_queue called before HotQueue was initialized.')
+    raise Exception("HotQueue hasn't been initialized yet.")
 
-# Tried adding timer here so that init_backend_services() would have initialized queue already
-time.sleep(20)
-q = get_queue()
+def _on_no_redis():
+    logging.error('get_redis called before Redis was initialized.')
+    raise Exception("Redis hasn't been initialized yet.")
+
+def get_redis(db: RedisDb) -> Redis:
+    """
+    Gets Redis and raises an Exception if it hasn't been initialized yet.
+
+    Returns:
+        redis (Redis): The Redis instance.
+    """
+    return generic_get_redis(db, none_handler=_on_no_redis)
 
 def get_transaction_data_from_redis() -> list[dict[str, Any]]:
     """
@@ -32,7 +42,25 @@ def get_transaction_data_from_redis() -> list[dict[str, Any]]:
         data = pipe.execute()
     return [orjson.loads(d) for d in data]
 
-def execute_job(job_id, job_description_dict:dict, labels=['Not Fraud','Fraud']):
+def _begin_job(job_id) -> dict[str, Any]:
+    """
+    Fetches the info about a job stored in Redis by the job ID and updates the job to in progress
+    Throws an error if the job info is not found in Redis
+
+    Args:
+        job_id (str): The ID of the job to find and update in Redis
+    Returns:
+        result (dict[str, Any]): The updated info of the job from Redis
+    """
+    job_info = get_redis(RedisDb.JOB_DB).get(job_id)
+    if not job_info:
+        raise Exception('Job not found in Redis.')
+    job_info = orjson.loads(job_info)
+    job_info['status'] = 'in_progress'
+    get_redis(RedisDb.JOB_DB).set(job_id, orjson.dumps(job_info))
+    return job_info
+
+def _execute_job(job_id, job_description_dict:dict, labels=['Not Fraud','Fraud']):
     # Get Plot Independent Variable from Job Dictionary
     independent_variable = job_description_dict["graph_feature"]
     
@@ -44,7 +72,7 @@ def execute_job(job_id, job_description_dict:dict, labels=['Not Fraud','Fraud'])
     
     if not data:
         return "No data available. \n", 404
- 
+
     df = pd.DataFrame(data)
     df[['trans_date', 'trans_time']] = df['trans_date_trans_time'].str.split(' ', expand=True)
     df['trans_date_trans_time'] = pd.to_datetime(df['trans_date_trans_time'])
@@ -138,47 +166,33 @@ def execute_job(job_id, job_description_dict:dict, labels=['Not Fraud','Fraud'])
         return True
     else: 
         return False
-    
-@q.worker
-def work(job_id):
-    """Worker pull items off the queue to execute jobs for client. 
-    Args:
-        job_id (int): Unique identifier for Job stored in database
-    """
-    logging.info("Popping job off of queue ... ")
-    # Get JOB Description
-    job_description_dict = get_redis(RedisDb.JOB_DB).get(id)
-    
-    if job_description_dict is None:
-        return ('Invalid job id. \n')
 
-    # Update Job Status
+def _complete_job(job_id: str, job_info: dict[str, Any], success: bool):
     get_redis(RedisDb.JOB_RESULTS_DB).set(job_id, orjson.dumps({
-            'status': 'In Progress',
-            'graph_feature': job_description_dict['graph_feature'],
-        }))
+        'status': 'completed' if success else 'failed',
+        'graph_feature': job_info['graph_feature'],
+    }))
 
-    # Start Job
-    job_status_output = execute_job(job_id, job_description_dict)
+def do_jobs(queue: HotQueue):
+    @queue.worker
+    def do_job(job_id: str):
+        try:
+            job_info = _begin_job(job_id)
+            success = _execute_job(job_id, job_info)
+            _complete_job(job_id, success)
+        except Exception as e:
+            logging.error(e)
+    do_job()
 
-    if job_status_output is True:
-        # Update Job Status
-        get_redis(RedisDb.JOB_RESULTS_DB).set(job_id, orjson.dumps({
-            'status': 'completed',
-            'graph_feature': job_description_dict['graph_feature'],
-        }))
-    else: 
-        # Update Job Status
-        get_redis(RedisDb.JOB_RESULTS_DB).set(job_id, orjson.dumps({
-            'status': 'failure',
-            'graph_feature': job_description_dict['graph_feature'],
-        }))
 
 def main():
     logging.info('Credit Card Fraud Transaction Worker service started')
+    warnings.filterwarnings('ignore')
+    sns.color_palette("pastel")
+    sns.set_palette("pastel")
     init_backend_services()
     logging.info('Redis and HotQueue instances attached, beginning work...')
-    work()
+    do_jobs(get_queue(none_handler=_on_no_queue))
 
 if __name__ == '__main__':
     logging.basicConfig(
