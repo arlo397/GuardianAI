@@ -3,9 +3,9 @@ from io import BytesIO
 import orjson
 import pandas as pd
 import pytest
-from services import ALL_DATA_COLS, RedisDb, REDIS_JOB_IDS_KEY
+from services import PLOTTING_DATA_COLS, RedisDb, REDIS_JOB_IDS_KEY
 from typing import Any
-from unittest.mock import call, patch, MagicMock, Mock
+from unittest.mock import patch, MagicMock, Mock
 import zipfile
 
 example_dataframe = pd.DataFrame({
@@ -35,34 +35,14 @@ example_dataframe = pd.DataFrame({
 example_dataframe.index = [0]
 example_dataframe_byte_string = b'{"trans_date_trans_time":"21/06/2020 12:14","cc_num":2291160000000000.0,"merchant":"fraud_Kirlin and Sons","category":"personal_care","amt":2.86,"first":"Jeff","last":"Elliott","gender":"M","street":"351 Darlene Green","city":"Columbia","state":"SC","zip":29209,"lat":33.9659,"long":-80.9355,"city_pop":333497,"job":"Mechanical engineer","dob":"19/03/1968","trans_num":"2da90c7d74bd46a0caf3777415b3ebd3","unix_time":1371816865,"merch_lat":33.986391,"merch_long":-81.200714,"is_fraud":0}'
 
+@patch('api.pipeline_data_out_of_redis')
 @patch('api.get_redis')
-def test_get_transaction_data_from_redis(mock_get_redis: Mock):
-  mock_redis = MagicMock()
-  mock_pipe = Mock()
-  mock_redis.keys.return_value = [b'0', b'1', b'2']
-  mock_pipe.execute.return_value = [b'{"look a key": 1}', b'{"look a key": 2}', b'{"look a key": 3}']
-  mock_redis.pipeline.return_value.__enter__.return_value = mock_pipe
-  mock_get_redis.return_value = mock_redis
-  assert api.get_transaction_data_from_redis() == [
-    {
-      'look a key': 1,
-    },
-    {
-      'look a key': 2,
-    },
-    {
-      'look a key': 3,
-    },
-  ]
-  mock_get_redis.assert_any_call(RedisDb.TRANSACTION_DB)
-  mock_redis.keys.assert_called_once_with()
-  mock_redis.pipeline.assert_called_once_with()
-  mock_pipe.get.assert_has_calls([
-    call(b'0'),
-    call(b'1'),
-    call(b'2'),
-  ])
-  mock_pipe.execute.assert_called_once_with()
+def test_get_transaction_data_from_redis(mock_get_redis, mock_pipeline_data_out_of_redis):
+  mock_get_redis.return_value = 'aredisinstance'
+  mock_pipeline_data_out_of_redis.return_value = 'apipelinedataoutofredisreturnvalue'
+  assert api.get_transaction_data_from_redis() == 'apipelinedataoutofredisreturnvalue'
+  mock_get_redis.assert_called_once_with(RedisDb.TRANSACTION_DB)
+  mock_pipeline_data_out_of_redis.assert_called_once_with('aredisinstance')
 
 @patch.dict('os.environ', {}, clear=True)
 @patch('logging.error')
@@ -324,8 +304,8 @@ def test_clear_all_jobs_calls_abort_on_failure(mock_get_redis, mock_abort):
   (['graph_feature'], 'JSON data params must be an object with a single key: "graph_feature".'),
   ({'k': 'v', 'k2': 'v2'}, 'JSON data params must be an object with a single key: "graph_feature".'),
   ({'k': 'v'}, 'JSON data params must be an object with a single key: "graph_feature".'),
-  ({'graph_feature': 5}, f'JSON param "graph_feature" must be included in {ALL_DATA_COLS}'),
-  ({'graph_feature': 'notavalidone'}, f'JSON param "graph_feature" must be included in {ALL_DATA_COLS}'),
+  ({'graph_feature': 5}, f'JSON param "graph_feature" must be included in {PLOTTING_DATA_COLS}'),
+  ({'graph_feature': 'notavalidone'}, f'JSON param "graph_feature" must be included in {PLOTTING_DATA_COLS}'),
 ])
 def test_post_job_fails_with_appropriate_error_message_on_bad_input(json: Any, error_message: str):
   with api.app.test_request_context(content_type='application/json', json=json):

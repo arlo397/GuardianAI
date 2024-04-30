@@ -1,6 +1,6 @@
 import pytest
 import services
-from unittest.mock import patch, Mock
+from unittest.mock import call, patch, MagicMock, Mock
 
 @pytest.fixture(autouse=True)
 def clean_global_state():
@@ -69,3 +69,29 @@ def test_get_log_level_handles_invalid_env_var():
 @patch.dict('os.environ', {'LOG_LEVEL': 'CRITICAL'}, clear=True)
 def test_get_log_level_handles_valid_env_var():
   assert services.get_log_level() == 'CRITICAL'
+
+def test_pipeline_data_out_of_redis():
+  mock_redis = MagicMock()
+  mock_pipe = Mock()
+  mock_redis.keys.return_value = [b'0', b'1', b'2']
+  mock_pipe.execute.return_value = [b'{"look a key": 1}', b'{"look a key": 2}', b'{"look a key": 3}']
+  mock_redis.pipeline.return_value.__enter__.return_value = mock_pipe
+  assert services.pipeline_data_out_of_redis(mock_redis) == [
+    {
+      'look a key': 1,
+    },
+    {
+      'look a key': 2,
+    },
+    {
+      'look a key': 3,
+    },
+  ]
+  mock_redis.keys.assert_called_once_with()
+  mock_redis.pipeline.assert_called_once_with()
+  mock_pipe.get.assert_has_calls([
+    call(b'0'),
+    call(b'1'),
+    call(b'2'),
+  ])
+  mock_pipe.execute.assert_called_once_with()

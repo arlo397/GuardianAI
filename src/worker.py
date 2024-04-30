@@ -1,4 +1,4 @@
-from services import PLOTTING_DATA_COLS, PLOTTING_DATA_COLS_NAMES, RedisDb, get_log_level, get_queue, get_redis as generic_get_redis, init_backend_services
+from services import PLOTTING_DATA_COLS, PLOTTING_DATA_COLS_NAMES, RedisDb, get_log_level, get_queue, get_redis as generic_get_redis, init_backend_services, pipeline_data_out_of_redis
 
 from hotqueue import HotQueue
 import logging
@@ -28,20 +28,6 @@ def get_redis(db: RedisDb) -> Redis:
     """
     return generic_get_redis(db, none_handler=_on_no_redis)
 
-def get_transaction_data_from_redis() -> list[dict[str, Any]]:
-    """
-    Returns all the data currently stored in Redis.
-    This will be an empty list if there is no data in Redis.
-
-    Returns:
-        result (list[dict[str, Any]]): The data stored in Redis.
-    """
-    keys = get_redis(RedisDb.TRANSACTION_DB).keys()
-    with get_redis(RedisDb.TRANSACTION_DB).pipeline() as pipe:
-        for key in keys: pipe.get(key)
-        data = pipe.execute()
-    return [orjson.loads(d) for d in data]
-
 def _begin_job(job_id) -> dict[str, Any]:
     """
     Fetches the info about a job stored in Redis by the job ID and updates the job to in progress
@@ -68,10 +54,7 @@ def _execute_job(job_id, job_description_dict:dict, labels=['Not Fraud','Fraud']
     if independent_variable not in PLOTTING_DATA_COLS: 
         return ("Unavailable metric to plot. \n")
     
-    data = get_transaction_data_from_redis()
-    
-    if not data:
-        return "No data available. \n", 404
+    data = pipeline_data_out_of_redis(get_redis(RedisDb.TRANSACTION_DB))
 
     df = pd.DataFrame(data)
     df[['trans_date', 'trans_time']] = df['trans_date_trans_time'].str.split(' ', expand=True)
@@ -168,10 +151,8 @@ def _execute_job(job_id, job_description_dict:dict, labels=['Not Fraud','Fraud']
         return False
 
 def _complete_job(job_id: str, job_info: dict[str, Any], success: bool):
-    get_redis(RedisDb.JOB_RESULTS_DB).set(job_id, orjson.dumps({
-        'status': 'completed' if success else 'failed',
-        'graph_feature': job_info['graph_feature'],
-    }))
+    job_info['status'] = 'completed' if success else 'failed'
+    get_redis(RedisDb.JOB_DB).set(job_id, job_info)
 
 def do_jobs(queue: HotQueue):
     @queue.worker

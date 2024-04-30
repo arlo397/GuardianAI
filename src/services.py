@@ -1,10 +1,11 @@
 from enum import Enum
 from hotqueue import HotQueue
 import logging
+from orjson import loads
 from os import environ
 from redis import Redis
 from time import sleep
-from typing import Callable, Optional
+from typing import Any, Callable, Optional
 
 _redis: Optional[Redis] = None
 _queue: Optional[HotQueue] = None
@@ -13,6 +14,7 @@ LOG_LVL_VAR = 'LOG_LEVEL'
 REDIS_IP_VAR = 'REDIS_IP'
 REDIS_JOB_QUEUE_KEY = 'job_queue'
 REDIS_JOB_IDS_KEY = 'job_ids'
+
 class RedisDb(Enum):
   TRANSACTION_DB = 0
   QUEUE_DB = 1
@@ -90,3 +92,17 @@ def get_log_level() -> str:
   if log_lvl in logging._levelToName.values():
     return log_lvl
   raise Exception('LOG_LVL not defined in environment variables.')
+
+def pipeline_data_out_of_redis(redisdb: Redis) -> list[dict[str, Any]]:
+  """
+    Returns all the data currently stored in Redis.
+    This will be an empty list if there is no data in Redis.
+
+    Returns:
+        result (list[dict[str, Any]]): The data stored in Redis.
+    """
+  keys = redisdb.keys()
+  with redisdb.pipeline() as pipe:
+    for key in keys: pipe.get(key)
+    data = pipe.execute()
+  return [loads(d) for d in data]

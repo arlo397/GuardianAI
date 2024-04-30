@@ -8,7 +8,7 @@ import pandas as pd
 from redis import Redis
 import requests
 from services import PLOTTING_DATA_COLS, REDIS_JOB_IDS_KEY, RedisDb, get_log_level, init_backend_services, \
-      get_queue as generic_get_queue, get_redis as generic_get_redis
+      get_queue as generic_get_queue, get_redis as generic_get_redis, pipeline_data_out_of_redis
 import socket
 from typing import Any, Optional
 import urllib3
@@ -57,11 +57,7 @@ def get_transaction_data_from_redis() -> list[dict[str, Any]]:
     Returns:
         result (list[dict[str, Any]]): The data stored in Redis.
     """
-    keys = get_redis(RedisDb.TRANSACTION_DB).keys()
-    with get_redis(RedisDb.TRANSACTION_DB).pipeline() as pipe:
-        for key in keys: pipe.get(key)
-        data = pipe.execute()
-    return [orjson.loads(d) for d in data]
+    return pipeline_data_out_of_redis(get_redis(RedisDb.TRANSACTION_DB))
 
 
 def _attempt_fetch_transaction_data_from_kaggle() -> Optional[pd.DataFrame]:
