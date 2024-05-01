@@ -65,7 +65,7 @@ def _execute_job(job_id, job_description_dict:dict, labels=['Not Fraud','Fraud']
         labels (list, optional): Graphing Labels Defaults to ['Not Fraud','Fraud'].
 
     Raises:
-        Exception: _description_
+        Exception: Raises all possible exceptions that may be raised while storing and reading image. 
 
     Returns:
         boolean: Boolean specifying whether the image was properly generated and saved. 
@@ -81,9 +81,9 @@ def _execute_job(job_id, job_description_dict:dict, labels=['Not Fraud','Fraud']
 
     df = pd.DataFrame(data)
     df[['trans_date', 'trans_time']] = df['trans_date_trans_time'].str.split(' ', expand=True)
-    df['trans_date_trans_time'] = pd.to_datetime(df['trans_date_trans_time'])
-    df['trans_date'] = pd.to_datetime(df['trans_date'])
-    df['trans_time'] = pd.to_datetime(df['trans_time'], format= '%H:%M').dt.time
+    # df['trans_date_trans_time'] = pd.to_datetime(df['trans_date_trans_time'])
+    df['trans_date'] = pd.to_datetime(df['trans_date'], format='mixed', dayfirst=True)
+    # df['trans_time'] = pd.to_datetime(df['trans_time'], format= '%H:%M').dt.time
 
     df['trans_month'] = df['trans_date'].dt.to_period('M').astype("str")
     df['trans_dayOfWeek'] = df['trans_date'].dt.day_name()
@@ -150,7 +150,9 @@ def _execute_job(job_id, job_description_dict:dict, labels=['Not Fraud','Fraud']
         with open(f'/job_{job_id}_output.png', 'rb') as f:
             img = f.read()
         
+                
         successful_data_entry = get_redis(RedisDb.JOB_RESULTS_DB).hset(job_id, 'image', img)
+        #successful_data_entry = get_redis(RedisDb.JOB_RESULTS_DB).set(job_id, img)
         logging.info(f'Return value for setting image: {successful_data_entry}')
     
     except FileNotFoundError:
@@ -169,23 +171,42 @@ def _execute_job(job_id, job_description_dict:dict, labels=['Not Fraud','Fraud']
     except:
         raise Exception
     
-    if successful_data_entry == 1:  # doesnt have to be 1
+    if successful_data_entry == 1 or successful_data_entry == 0:
         return True
     else: 
         return False
 
 def _complete_job(job_id: str, job_info: dict[str, Any], success: bool):
+    """Updates job status to complete, either successfully or in failure. 
+
+    Args:
+        job_id (str): uuid of job
+        job_info (dict[str, Any]): Job information dictionary that will be updated
+        success (bool): Boolean indicating whether the job was successfully completed based on Redis hset function
+    """
     job_info['status'] = 'completed' if success else 'failed'
-    get_redis(RedisDb.JOB_DB).set(job_id, job_info)
+    logging.info(f'Job {job_id} updated information: {job_info}')
+    get_redis(RedisDb.JOB_DB).set(job_id, orjson.dumps(job_info))
+    logging.info(f'Job information updated in database...')
 
 def do_jobs(queue: HotQueue):
+    """Starts a worker to execute jobs from the provided HotQueue.
+
+    Args:
+        queue (HotQueue): The HotQueue instance, or None if queue is None
+    """
     @queue.worker
     def do_job(job_id: str):
+        """Pops job tasks off of queue to execute
+
+        Args:
+            job_id (str): uuid of job
+        """
         try:
             job_info = _begin_job(job_id)
             logging.info("Job has begun...")
             success = _execute_job(job_id, job_info)
-            logging.info(f"Job has finished executing. {job_id} success code is {success}")
+            logging.info(f"Job has finished executing. {job_id} success code is {success}.")
             _complete_job(job_id, job_info, success)
         except Exception as e:
             logging.error(e)

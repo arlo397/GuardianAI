@@ -101,7 +101,7 @@ def _attempt_fetch_transaction_data_from_kaggle() -> Optional[pd.DataFrame]:
             return None
         filepath_or_data = BytesIO(extracted_files[kaggle_vars[2]])
         logging.debug('CSV data pulled into memory from Kaggle.')
-        df = pd.read_csv(filepath_or_data, sep=',', index_col=0)
+        df = pd.read_csv(filepath_or_data, sep=',')
         logging.debug('Pandas DataFrame generated.')
         return df
     except Exception as e:
@@ -405,6 +405,9 @@ def clear_all_jobs() -> tuple[str, int]:
 
 
 # curl -X POST localhost:5173/jobs -d '{"graph_feature": "gender"}' -H "Content-Type: application/json"
+# curl -X POST localhost:5173/jobs -d '{"graph_feature": "trans_month"}' -H "Content-Type: application/json"
+# curl -X POST localhost:5173/jobs -d '{"graph_feature": "trans_dayOfWeek"}' -H "Content-Type: application/json"
+# curl -X POST localhost:5173/jobs -d '{"graph_feature": "category"}' -H "Content-Type: application/json"
 @app.route('/jobs', methods=['POST'])
 def post_job() -> dict[str, str]:
     """
@@ -469,12 +472,13 @@ def get_job_result(id: str) -> Any:
     job_info = get_job_information(id)
     if 'status' in job_info:
         if job_info['status'] == 'completed':
-            result = get_redis(RedisDb.JOB_RESULTS_DB).get(id)
+            #result = get_redis(RedisDb.JOB_RESULTS_DB).get(id)
+            result = get_redis(RedisDb.JOB_RESULTS_DB).hget(id, 'image')
             if result is None:
                 logging.error(f'Job marked as completed but no result found in DB. Job no {id}')
                 abort(500, 'Job marked as completed but no result found in DB.')
             return send_file(BytesIO(result), mimetype='image/png', as_attachment=True,
-                            attachment_filename=f'plot {id}.png')
+                            download_name=f'plot {id}.png')
         abort(400, 'Job is not complete.')
     logging.error(f'Job {id} is malformed. {job_info}')
     abort(500, 'Malformed job.')
@@ -483,9 +487,40 @@ def get_job_result(id: str) -> Any:
 # curl http://127.0.0.1:5173/help
 @app.route('/help')
 def get_help():
-    # TODO: After completing all of the routes, write description for each route
-    pass
+    # Define descriptions for each endpoint
+    endpoints = {
+        '/transaction_data (GET)': {
+            'description': 'Returns all transaction data currently stored in Redis.',
+            'example_curl': 'curl http://127.0.0.1:5173/transaction_data'
+        },
+        '/transaction_data (POST)': {
+            'description': 'Fetches transaction data from Kaggle or disk and stores it in Redis.',
+            'example_curl': 'curl -X POST localhost:5173/transaction_data'
+        },
+        '/transaction_data (DELETE)': {
+            'description': 'Deletes all transaction data stored in Redis.',
+            'example_curl': 'curl -X DELETE localhost:5173/transaction_data'
+        },
+        '/transaction_data_view': {
+            'description': 'Returns a default slice of the transaction data stored in Redis (first 5 entries).',
+            'example_curl': 'curl localhost:5173/transaction_data_view"'
+        },
+         '/transaction_data_view?limit=<int>&offset=<int>': {
+            'description': 'Returns a slice of the transaction data stored in Redis.',
+            'example_curl': 'curl "localhost:5173/transaction_data_view?limit=2&offset=7"'
+        },
+         '/amt_analysis': {
+            'description': 'Returns statistical descriptions of the transaction amounts in the dataset.',
+            'example_curl': 'curl "localhost:5173/amt_analysis"'
+        },
 
+    }
+
+    # Print each endpoint's information in a single line
+    for endpoint, info in endpoints.items():
+        print(f"{endpoint}: {info['description']} Example curl: {info['example_curl']}")
+
+    return 'Endpoint information printed in console.'
 
 def main():
     """
