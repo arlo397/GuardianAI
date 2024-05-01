@@ -381,7 +381,7 @@ def ai_analysis() -> dict:
 @app.route('/jobs')
 def get_all_existing_job_ids() -> list[str]:
     """
-    Returns all job ids in the databse.
+    Returns all job ids in the database.
     Gives a 500 error if Redis hasn't been initialized yet.
 
     Returns:
@@ -487,6 +487,11 @@ def get_job_result(id: str) -> Any:
 # curl http://127.0.0.1:5173/help
 @app.route('/help')
 def get_help():
+    """Returns instructions for user to utlize the endpoints.
+
+    Returns:
+        str: Help string explaining all endpoints. 
+    """
     # Define descriptions for each endpoint
     endpoints = {
         '/transaction_data (GET)': {
@@ -513,14 +518,52 @@ def get_help():
             'description': 'Returns statistical descriptions of the transaction amounts in the dataset.',
             'example_curl': 'curl "localhost:5173/amt_analysis"'
         },
-
+        '/amt_fraud_correlation':{
+            'description': 'Returns the correlation between transaction amount and fraud status in the dataset.',
+            'example_curl': 'curl "localhost:5173/amt_fraud_correlation"'
+        }, 
+         '/fraudulent_zipcode_info':{
+            'description': 'Returns the zipcode with the highest number of fraudulent transactions, and retrieves its geographic location.',
+            'example_curl': 'curl "localhost:5173/fraudulent_zipcode_info"'
+        }, 
+         '/fraud_by_state':{
+            'description': ' Returns the number of fraudulent transactions per state.',
+            'example_curl': 'curl "localhost:5173/fraud_by_state"'
+        }, 
+         '/ai_analysis':{
+            'description': 'Returns the most important features and feature importances from the trained model.',
+            'example_curl': 'curl "localhost:5173/ai_analysis"'
+        }, 
+         '/jobs (GET)':{
+            'description': 'Returns all job ids in the database.',
+            'example_curl': 'curl "localhost:5173/jobs"'
+        }, 
+         '/jobs (DELETE)':{
+            'description': 'Clears all jobs from the jobs database.',
+            'example_curl': 'curl -X DELETE "localhost:5173/jobs"'
+        }, 
+        '/jobs (POST)': {
+            'description': 'Creates a job for plotting a feature specified by the user.',
+            'Graph Feature Parameters': ["gender", "trans_month", "trans_dayOfWeek", "category"],
+            'example_curl': 'curl -X POST localhost:5173/jobs -d "{\"graph_feature\": \"gender\"}" -H "Content-Type: application/json"'
+        },
+        '/jobs/<id>' :{
+            'description': 'Returns information about the specified job id.',
+            'example_curl': 'curl -X DELETE "localhost:5173/jobs/99e6820f-0e4f-4b55-8052-7845ea390a44"'
+        },
+        '/results/<id>' :{
+            'description': ' Returns the job result as a image file download.',
+            'example_curl': 'curl -X DELETE "localhost:5173/results/99e6820f-0e4f-4b55-8052-7845ea390a44"'
+        },
     }
 
+    output_string = 'Description of all application routes: \n'
     # Print each endpoint's information in a single line
     for endpoint, info in endpoints.items():
-        print(f"{endpoint}: {info['description']} Example curl: {info['example_curl']}")
+        output_string += f"{endpoint}: {info['description']} \n   Example curl: {info['example_curl']} \n"  
+        output_string += "\n"
 
-    return 'Endpoint information printed in console.'
+    return output_string
 
 def main():
     """
