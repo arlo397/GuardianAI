@@ -15,6 +15,8 @@ REDIS_IP_VAR = 'REDIS_IP'
 REDIS_JOB_QUEUE_KEY = 'job_queue'
 REDIS_JOB_IDS_KEY = 'job_ids'
 
+OK_200 = ('OK\n', 200)
+
 class RedisDb(Enum):
   TRANSACTION_DB = 0
   QUEUE_DB = 1

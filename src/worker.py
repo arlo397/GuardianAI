@@ -150,9 +150,7 @@ def _execute_job(job_id, job_description_dict:dict, labels=['Not Fraud','Fraud']
         with open(f'/job_{job_id}_output.png', 'rb') as f:
             img = f.read()
         
-                
-        successful_data_entry = get_redis(RedisDb.JOB_RESULTS_DB).hset(job_id, 'image', img)
-        #successful_data_entry = get_redis(RedisDb.JOB_RESULTS_DB).set(job_id, img)
+        successful_data_entry = get_redis(RedisDb.JOB_RESULTS_DB).set(job_id, img)
         logging.info(f'Return value for setting image: {successful_data_entry}')
     
     except FileNotFoundError:
@@ -171,10 +169,7 @@ def _execute_job(job_id, job_description_dict:dict, labels=['Not Fraud','Fraud']
     except:
         raise Exception
     
-    if successful_data_entry == 1 or successful_data_entry == 0:
-        return True
-    else: 
-        return False
+    return bool(successful_data_entry)
 
 def _complete_job(job_id: str, job_info: dict[str, Any], success: bool):
     """Updates job status to complete, either successfully or in failure. 

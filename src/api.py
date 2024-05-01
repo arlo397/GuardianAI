@@ -7,7 +7,7 @@ from os import environ
 import pandas as pd
 from redis import Redis
 import requests
-from services import PLOTTING_DATA_COLS, REDIS_JOB_IDS_KEY, RedisDb, get_log_level, init_backend_services, \
+from services import OK_200, PLOTTING_DATA_COLS, REDIS_JOB_IDS_KEY, RedisDb, get_log_level, init_backend_services, \
       get_queue as generic_get_queue, get_redis as generic_get_redis, pipeline_data_out_of_redis
 import socket
 from typing import Any, Optional
@@ -125,7 +125,7 @@ def _attempt_read_transaction_data_from_disk() -> Optional[pd.DataFrame]:
             logging.error('No valid path to the dataset specified by env var FALLBACK_DATASET_PATH')
             return None
         logging.debug('Dataset fallback path identified, attempting to read in the data...')
-        df = pd.read_csv(dataset_path, sep=',', index_col=0)
+        df = pd.read_csv(dataset_path, sep=',')
         logging.debug('Pandas DataFrame generated.')
         return df
     except Exception as e:
@@ -166,7 +166,7 @@ def load_transaction_data_into_redis() -> tuple[str, int]:
             pipe.set(idx, orjson.dumps(record))
         pipe.execute()
     logging.info('Data POSTED into Redis Database.')
-    return 'OK \n', 200
+    return OK_200
 
 
 # curl -X DELETE localhost:5173/transaction_data
@@ -181,7 +181,7 @@ def clear_transaction_data() -> tuple[str, int]:
     """
     if get_redis(RedisDb.TRANSACTION_DB).flushdb():
         logging.info('Data DELETED from Redis Database.')
-        return 'OK \n', 200
+        return OK_200
     abort(500, 'Error clearing data from Redis.')
 
 
@@ -400,7 +400,7 @@ def clear_all_jobs() -> tuple[str, int]:
     Returns:
         result (tuple[str, int]): A OK 200 or error message and 500.
     """
-    if get_redis(RedisDb.JOB_DB).flushdb(): return 'OK \n', 200
+    if get_redis(RedisDb.JOB_DB).flushdb(): return OK_200
     abort(500, 'Error flushing jobs db.')
 
 
@@ -472,8 +472,7 @@ def get_job_result(id: str) -> Any:
     job_info = get_job_information(id)
     if 'status' in job_info:
         if job_info['status'] == 'completed':
-            #result = get_redis(RedisDb.JOB_RESULTS_DB).get(id)
-            result = get_redis(RedisDb.JOB_RESULTS_DB).hget(id, 'image')
+            result = get_redis(RedisDb.JOB_RESULTS_DB).get(id)
             if result is None:
                 logging.error(f'Job marked as completed but no result found in DB. Job no {id}')
                 abort(500, 'Job marked as completed but no result found in DB.')
@@ -557,10 +556,10 @@ def get_help():
         },
     }
 
-    output_string = 'Description of all application routes: \n'
+    output_string = 'Description of all application routes:\n'
     # Print each endpoint's information in a single line
     for endpoint, info in endpoints.items():
-        output_string += f"{endpoint}: {info['description']} \n   Example curl: {info['example_curl']} \n"  
+        output_string += f"{endpoint}: {info['description']}\n   Example curl: {info['example_curl']}\n"  
         output_string += "\n"
 
     return output_string

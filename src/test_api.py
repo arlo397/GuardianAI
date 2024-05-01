@@ -3,12 +3,13 @@ from io import BytesIO
 import orjson
 import pandas as pd
 import pytest
-from services import PLOTTING_DATA_COLS, RedisDb, REDIS_JOB_IDS_KEY
+from services import OK_200, PLOTTING_DATA_COLS, RedisDb, REDIS_JOB_IDS_KEY
 from typing import Any
 from unittest.mock import patch, MagicMock, Mock
 import zipfile
 
 example_dataframe = pd.DataFrame({
+    'Unnamed: 0': [0],
     'trans_date_trans_time': ['21/06/2020 12:14'],
     'cc_num': [2.29116E+15],
     'merchant': ['fraud_Kirlin and Sons'],
@@ -32,8 +33,7 @@ example_dataframe = pd.DataFrame({
     'merch_long': [-81.200714],
     'is_fraud': [0],
   })
-example_dataframe.index = [0]
-example_dataframe_byte_string = b'{"trans_date_trans_time":"21/06/2020 12:14","cc_num":2291160000000000.0,"merchant":"fraud_Kirlin and Sons","category":"personal_care","amt":2.86,"first":"Jeff","last":"Elliott","gender":"M","street":"351 Darlene Green","city":"Columbia","state":"SC","zip":29209,"lat":33.9659,"long":-80.9355,"city_pop":333497,"job":"Mechanical engineer","dob":"19/03/1968","trans_num":"2da90c7d74bd46a0caf3777415b3ebd3","unix_time":1371816865,"merch_lat":33.986391,"merch_long":-81.200714,"is_fraud":0}'
+example_dataframe_byte_string = b'{"Unnamed: 0":0,"trans_date_trans_time":"21/06/2020 12:14","cc_num":2291160000000000.0,"merchant":"fraud_Kirlin and Sons","category":"personal_care","amt":2.86,"first":"Jeff","last":"Elliott","gender":"M","street":"351 Darlene Green","city":"Columbia","state":"SC","zip":29209,"lat":33.9659,"long":-80.9355,"city_pop":333497,"job":"Mechanical engineer","dob":"19/03/1968","trans_num":"2da90c7d74bd46a0caf3777415b3ebd3","unix_time":1371816865,"merch_lat":33.986391,"merch_long":-81.200714,"is_fraud":0}'
 
 @patch('api.pipeline_data_out_of_redis')
 @patch('api.get_redis')
@@ -165,7 +165,7 @@ def test__attempt_read_transaction_data_from_disk_fails_with_bad_env(bad_env):
 def test_attempt_read_transaction_data_from_disk_succeeds_with_good_env(mock_read_csv):
   mock_read_csv.return_value = 'a fake df'
   assert api._attempt_read_transaction_data_from_disk() == 'a fake df'
-  mock_read_csv.assert_called_once_with('a file.csv', sep=',', index_col=0)
+  mock_read_csv.assert_called_once_with('a file.csv', sep=',')
 
 @patch('api.abort', side_effect=Exception)
 @patch('api._attempt_read_transaction_data_from_disk')
@@ -187,7 +187,7 @@ def test_load_transaction_data_into_redis_succeeds_with_kaggle(mock_kaggle_fetch
   mock_pipe = Mock()
   mock_redis.pipeline.return_value.__enter__.return_value = mock_pipe
   mock_get_redis.return_value = mock_redis
-  assert api.load_transaction_data_into_redis() == ('OK', 200)
+  assert api.load_transaction_data_into_redis() == OK_200
   mock_get_redis.assert_called_once_with(RedisDb.TRANSACTION_DB)
   mock_redis.pipeline.assert_called_once_with()
   mock_pipe.set.assert_called_once_with(0, example_dataframe_byte_string)
@@ -202,7 +202,7 @@ def test_load_transaction_data_into_redis_uses_disk_as_backup(mock_kaggle_fetch,
   mock_pipe = Mock()
   mock_redis.pipeline.return_value.__enter__.return_value = mock_pipe
   mock_get_redis.return_value = mock_redis
-  assert api.load_transaction_data_into_redis() == ('OK', 200)
+  assert api.load_transaction_data_into_redis() == OK_200
   mock_get_redis.assert_called_once_with(RedisDb.TRANSACTION_DB)
   mock_redis.pipeline.assert_called_once_with()
   mock_pipe.set.assert_called_once_with(0, example_dataframe_byte_string)
@@ -212,7 +212,7 @@ def test_clear_transaction_data_succeeds(mock_get_redis):
   mock_redis = Mock()
   mock_redis.flushdb.return_value = True
   mock_get_redis.return_value = mock_redis
-  assert api.clear_transaction_data() == ('OK', 200)
+  assert api.clear_transaction_data() == OK_200
   mock_get_redis.assert_called_once_with(RedisDb.TRANSACTION_DB)
   mock_redis.flushdb.assert_called_once_with()
 
@@ -283,7 +283,7 @@ def test_clear_all_jobs_succeeds(mock_get_redis):
   mock_redis = Mock()
   mock_redis.flushdb.return_value = True
   mock_get_redis.return_value = mock_redis
-  assert api.clear_all_jobs() == ('OK', 200)
+  assert api.clear_all_jobs() == OK_200
   mock_get_redis.assert_called_once_with(RedisDb.JOB_DB)
   mock_redis.flushdb.assert_called_once_with()
 
@@ -399,4 +399,4 @@ def test_get_job_calls_send_file_if_a_result_is_found(mock_get_job_info, mock_ge
   assert len(send_file_call.args) == 1
   assert len(send_file_call.kwargs) == 3
   assert send_file_call.args[0].getvalue() == b'afakebinarystoredvalue'
-  assert send_file_call.kwargs == {'mimetype': 'image/png', 'as_attachment': True, 'attachment_filename': 'plot ajobid.png'}
+  assert send_file_call.kwargs == {'mimetype': 'image/png', 'as_attachment': True, 'download_name': 'plot ajobid.png'}
