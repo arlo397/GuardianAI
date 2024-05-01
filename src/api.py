@@ -23,6 +23,11 @@ queue_none_handler = lambda: abort(500, 'Unable to interact with jobs - HotQueue
 redis_none_handler = lambda: abort(500, 'Unable to read/write interact with data - Redis not initialized.')
 
 def import_kaggle():
+    """Imports KaggleApi from the kaggle module.
+
+    Returns:
+        KaggleApi: An instance of KaggleApi class for interacting with the Kaggle API.
+    """
     from kaggle import KaggleApi
     return KaggleApi
 
@@ -161,7 +166,7 @@ def load_transaction_data_into_redis() -> tuple[str, int]:
             pipe.set(idx, orjson.dumps(record))
         pipe.execute()
     logging.info('Data POSTED into Redis Database.')
-    return 'OK', 200
+    return 'OK \n', 200
 
 
 # curl -X DELETE localhost:5173/transaction_data
@@ -176,7 +181,7 @@ def clear_transaction_data() -> tuple[str, int]:
     """
     if get_redis(RedisDb.TRANSACTION_DB).flushdb():
         logging.info('Data DELETED from Redis Database.')
-        return 'OK', 200
+        return 'OK \n', 200
     abort(500, 'Error clearing data from Redis.')
 
 
@@ -395,7 +400,7 @@ def clear_all_jobs() -> tuple[str, int]:
     Returns:
         result (tuple[str, int]): A OK 200 or error message and 500.
     """
-    if get_redis(RedisDb.JOB_DB).flushdb(): return 'OK', 200
+    if get_redis(RedisDb.JOB_DB).flushdb(): return 'OK \n', 200
     abort(500, 'Error flushing jobs db.')
 
 

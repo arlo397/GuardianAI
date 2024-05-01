@@ -185,68 +185,65 @@ Data DELETED from Redis Database.
 
 4. **Data Example Endpoint**
 
-- **Description**: This endpoint provides a quick look at the dataset by returning the first five entries by default. If the user wishes to see the first n records of the data set, they may specify a limit query parameter, otherwise, the first five entries are returned via: `curl -X GET localhost:5173/data_example`
+- **Description**: This endpoint provides a quick look at the dataset by returning the first five entries. If the user wishes to see n records offset by some number, they may specify a limit and offset query parameter, otherwise, the first five entries are returned via: `curl localhost:5173/transaction_data_view`
 
 ```shell
-curl -X GET 'localhost:5173/data_example?limit=2'
+curl "localhost:5173/transaction_data_view?limit=2&offset=7"
 ```
 
 - _expected output_
 
 ```shell
-  [
-    {
-      "Unnamed: 0": 0,
-      "amt": 2.86,
-      "category": "personal_care",
-      "cc_num": 2291160000000000.0,
-      "city": "Columbia",
-      "city_pop": 333497,
-      "dob": "19/03/1968",
-      "first": "Jeff",
-      "gender": "M",
-      "is_fraud": 0,
-      "job": "Mechanical engineer",
-      "last": "Elliott",
-      "lat": 33.9659,
-      "long": -80.9355,
-      "merch_lat": 33.986391,
-      "merch_long": -81.200714,
-      "merchant": "fraud_Kirlin and Sons",
-      "state": "SC",
-      "street": "351 Darlene Green",
-      "trans_date_trans_time": "21/06/2020 12:14",
-      "trans_num": "2da90c7d74bd46a0caf3777415b3ebd3",
-      "unix_time": 1371816865,
-      "zip": 29209
-    },
-    {
-      "Unnamed: 0": 1,
-      "amt": 29.84,
-      "category": "personal_care",
-      "cc_num": 3573030000000000.0,
-      "city": "Altonah",
-      "city_pop": 302,
-      "dob": "17/01/1990",
-      "first": "Joanne",
-      "gender": "F",
-      "is_fraud": 0,
-      "job": "Sales professional, IT",
-      "last": "Williams",
-      "lat": 40.3207,
-      "long": -110.436,
-      "merch_lat": 39.450498,
-      "merch_long": -109.960431,
-      "merchant": "fraud_Sporer-Keebler",
-      "state": "UT",
-      "street": "3638 Marsh Union",
-      "trans_date_trans_time": "21/06/2020 12:14",
-      "trans_num": "324cc204407e99f51b0d6ca0055005e7",
-      "unix_time": 1371816873,
-      "zip": 84002
-    }
- ]
-
+ [
+  {
+    "amt": 10.37,
+    "category": "personal_care",
+    "cc_num": 3589290000000000.0,
+    "city": "Spencer",
+    "city_pop": 343,
+    "dob": "05/03/1972",
+    "first": "Paula",
+    "gender": "F",
+    "is_fraud": 0,
+    "job": "Development worker, international aid",
+    "last": "Estrada",
+    "lat": 43.7557,
+    "long": -97.5936,
+    "merch_lat": 44.495498,
+    "merch_long": -97.728453,
+    "merchant": "fraud_Reichel LLC",
+    "state": "SD",
+    "street": "350 Stacy Glens",
+    "trans_date_trans_time": "21/06/2020 12:15",
+    "trans_num": "8be473af4f05fc6146ea55ace73e7ca2",
+    "unix_time": 1371816950,
+    "zip": 57374
+  },
+  {
+    "amt": 4.37,
+    "category": "shopping_pos",
+    "cc_num": 3596360000000000.0,
+    "city": "Morrisdale",
+    "city_pop": 3688,
+    "dob": "27/05/1973",
+    "first": "David",
+    "gender": "M",
+    "is_fraud": 0,
+    "job": "Advice worker",
+    "last": "Everett",
+    "lat": 41.0001,
+    "long": -78.2357,
+    "merch_lat": 41.546067,
+    "merch_long": -78.120238,
+    "merchant": "fraud_Goyette, Howell and Collier",
+    "state": "PA",
+    "street": "4138 David Fall",
+    "trans_date_trans_time": "21/06/2020 12:16",
+    "trans_num": "71a1da150d1ce510193d7622e08e784e",
+    "unix_time": 1371816970,
+    "zip": 16858
+  }
+]
 ```
 
 5. **Amount Analysis Endpoint**

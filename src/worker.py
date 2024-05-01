@@ -12,10 +12,20 @@ from typing import Any
 import warnings
 
 def _on_no_queue():
+    """Raise an exception when get_queue is called before HotQueue is initialized.
+
+    Raises:
+        Exception: If HotQueue hasn't been initialized yet.
+    """
     logging.error('get_queue called before HotQueue was initialized.')
     raise Exception("HotQueue hasn't been initialized yet.")
 
 def _on_no_redis():
+    """Raise an exception when get_redis is called before Redis is initialized.
+
+    Raises:
+        Exception: If Redis hasn't been initialized yet.
+    """
     logging.error('get_redis called before Redis was initialized.')
     raise Exception("Redis hasn't been initialized yet.")
 
@@ -47,6 +57,19 @@ def _begin_job(job_id) -> dict[str, Any]:
     return job_info
 
 def _execute_job(job_id, job_description_dict:dict, labels=['Not Fraud','Fraud']):
+    """Generates and saves matplotlib graph based on the user input feature when submitting a job. 
+
+    Args:
+        job_id (str): uuid of submitted job
+        job_description_dict (dict): Job information dictionary specifying the desired graph parameter. 
+        labels (list, optional): Graphing Labels Defaults to ['Not Fraud','Fraud'].
+
+    Raises:
+        Exception: _description_
+
+    Returns:
+        boolean: Boolean specifying whether the image was properly generated and saved. 
+    """
     # Get Plot Independent Variable from Job Dictionary
     independent_variable = job_description_dict["graph_feature"]
     
@@ -128,6 +151,7 @@ def _execute_job(job_id, job_description_dict:dict, labels=['Not Fraud','Fraud']
             img = f.read()
         
         successful_data_entry = get_redis(RedisDb.JOB_RESULTS_DB).hset(job_id, 'image', img)
+        logging.info(f'Return value for setting image: {successful_data_entry}')
     
     except FileNotFoundError:
         # Handle the case where the file doesn't exist
@@ -145,7 +169,7 @@ def _execute_job(job_id, job_description_dict:dict, labels=['Not Fraud','Fraud']
     except:
         raise Exception
     
-    if successful_data_entry == 1:  
+    if successful_data_entry == 1:  # doesnt have to be 1
         return True
     else: 
         return False
@@ -159,8 +183,10 @@ def do_jobs(queue: HotQueue):
     def do_job(job_id: str):
         try:
             job_info = _begin_job(job_id)
+            logging.info("Job has begun...")
             success = _execute_job(job_id, job_info)
-            _complete_job(job_id, success)
+            logging.info(f"Job has finished executing. {job_id} success code is {success}")
+            _complete_job(job_id, job_info, success)
         except Exception as e:
             logging.error(e)
     do_job()
