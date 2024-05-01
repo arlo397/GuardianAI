@@ -1,6 +1,7 @@
 from services import PLOTTING_DATA_COLS, PLOTTING_DATA_COLS_NAMES, RedisDb, get_log_level, get_queue, get_redis as generic_get_redis, init_backend_services, pipeline_data_out_of_redis
 
 from hotqueue import HotQueue
+from io import BytesIO
 import logging
 import matplotlib.pyplot as plt
 import orjson
@@ -56,13 +57,12 @@ def _begin_job(job_id) -> dict[str, Any]:
     get_redis(RedisDb.JOB_DB).set(job_id, orjson.dumps(job_info))
     return job_info
 
-def _execute_job(job_id, job_description_dict:dict, labels=['Not Fraud','Fraud']):
+def _execute_job(job_id, job_description_dict: dict[str, str]) -> bool:
     """Generates and saves matplotlib graph based on the user input feature when submitting a job. 
 
     Args:
         job_id (str): uuid of submitted job
         job_description_dict (dict): Job information dictionary specifying the desired graph parameter. 
-        labels (list, optional): Graphing Labels Defaults to ['Not Fraud','Fraud'].
 
     Raises:
         Exception: Raises all possible exceptions that may be raised while storing and reading image. 
@@ -70,12 +70,14 @@ def _execute_job(job_id, job_description_dict:dict, labels=['Not Fraud','Fraud']
     Returns:
         boolean: Boolean specifying whether the image was properly generated and saved. 
     """
+    labels=['Not Fraud','Fraud']
     # Get Plot Independent Variable from Job Dictionary
     independent_variable = job_description_dict["graph_feature"]
     
     # Check if worker is compatible to plot feature
     if independent_variable not in PLOTTING_DATA_COLS: 
-        return ("Unavailable metric to plot. \n")
+        logging.error(f'JOB ID: {job_id} | Unavailable metric to plot.')
+        return False
     
     data = pipeline_data_out_of_redis(get_redis(RedisDb.TRANSACTION_DB))
 
@@ -94,7 +96,7 @@ def _execute_job(job_id, job_description_dict:dict, labels=['Not Fraud','Fraud']
     index = PLOTTING_DATA_COLS.index(independent_variable)
     independent_variable_str = PLOTTING_DATA_COLS_NAMES[index]
     
-    fig, axes = plt.subplots(1, 2, figsize=(10, 6)) # (width, height)
+    _, axes = plt.subplots(1, 2, figsize=(10, 6)) # (width, height)
     plt.suptitle("Distribution of Transaction by " + independent_variable_str, fontsize=20, fontweight='bold')
     
     for i, ax in enumerate(axes.flatten()):
@@ -112,7 +114,7 @@ def _execute_job(job_id, job_description_dict:dict, labels=['Not Fraud','Fraud']
             ax1.set_ylabel('Amount ($)')  
             ax1.set_title(f"{labels[i]}")
             ax1.legend(loc='upper right')
- 
+
         elif (independent_variable == 'gender'):
             ax.pie(df_1[independent_variable].value_counts(), labels = ['Female','Male'] , autopct='%1.1f%%')
             ax.set_title(f"{labels[i]}")
@@ -139,37 +141,21 @@ def _execute_job(job_id, job_description_dict:dict, labels=['Not Fraud','Fraud']
             ax.set_xticklabels(cats, rotation=90)
             ax.legend(loc='upper left')
             ax.set_title(f"{labels[i]}")
-        else: 
-            return("Error. This should not happen. \n")
-
-    # Save Plot briefly in container before you move it to Redis
-    plt.savefig(f'/job_{job_id}_output.png') 
+        else:
+            logging.error(f'JOB ID: {job_id} | Encountered unsupported data element despite checking PLOTTING_DATA_COLS.')
+            return False
 
     # Save Plot into Redis Results Data Base
     try:
-        with open(f'/job_{job_id}_output.png', 'rb') as f:
-            img = f.read()
-        
-        successful_data_entry = get_redis(RedisDb.JOB_RESULTS_DB).set(job_id, img)
-        logging.info(f'Return value for setting image: {successful_data_entry}')
-    
-    except FileNotFoundError:
-        # Handle the case where the file doesn't exist
-        print(f"Error: File '/job_{job_id}_output.png' not found")
-
-    except IOError as e:
-        # Handle general I/O errors
-        print(f"Error: I/O error occurred - {e}")
-
+        img_buffer = BytesIO()
+        plt.savefig(img_buffer, format='png')
+        successful_data_entry = get_redis(RedisDb.JOB_RESULTS_DB).set(job_id, img_buffer.getvalue())
+        if not successful_data_entry:
+            raise Exception('Image data failed to be set in Redis.')
     except Exception as e:
-        # Catch any other unexpected exceptions and handle them appropriately
-        print(f"An unexpected error occurred: {e}")
-        raise
-
-    except:
-        raise Exception
-    
-    return bool(successful_data_entry)
+        logging.error(e)
+        return False
+    return True
 
 def _complete_job(job_id: str, job_info: dict[str, Any], success: bool):
     """Updates job status to complete, either successfully or in failure. 
@@ -216,6 +202,7 @@ def main():
     init_backend_services()
     logging.info('Redis and HotQueue instances attached, beginning work...')
     do_jobs(get_queue(none_handler=_on_no_queue))
+
 
 if __name__ == '__main__':
     logging.basicConfig(

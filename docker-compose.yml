@@ -35,5 +35,4 @@ services:
       LOG_LEVEL: DEBUG
     depends_on:
       - redis
-      - flask-api
     command: python worker.py
