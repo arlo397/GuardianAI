@@ -490,9 +490,16 @@ While the service is up (after executing `docker-compose up`), you may curl the 
 
       <img src="img/gender.png" alt="Alt text"  />
 
-      - _expected output_
+
+15. **Informational Help Endpoint**
+
+    - **Description**: This endpoint returns a description of all of the routes as well as an example curl command.  
 
       ```shell
+      curl http://127.0.0.1:5173/help
+      ```
+    - _expected output_
+    ```shell
       Description of all application routes:
       /transaction_data (GET): Returns all transaction data currently stored in Redis.
         Example curl: curl http://127.0.0.1:5173/transaction_data
@@ -538,16 +545,6 @@ While the service is up (after executing `docker-compose up`), you may curl the 
 
       /results/<id>:  Returns the job result as a image file download.
         Example curl: curl -X DELETE "localhost:5173/results/99e6820f-0e4f-4b55-8052-7845ea390a44"
-
-      ```
-
-
-15. **Informational Help Endpoint**
-
-    - **Description**: This endpoint returns a description of all of the routes as well as an example curl command.  
-
-      ```shell
-      curl http://127.0.0.1:5173/help
       ```
 #### Instructions on How to Run Test Cases
 
