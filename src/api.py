@@ -507,7 +507,7 @@ def get_help():
         },
         '/transaction_data_view': {
             'description': 'Returns a default slice of the transaction data stored in Redis (first 5 entries).',
-            'example_curl': 'curl localhost:5173/transaction_data_view"'
+            'example_curl': 'curl localhost:5173/transaction_data_view'
         },
          '/transaction_data_view?limit=<int>&offset=<int>': {
             'description': 'Returns a slice of the transaction data stored in Redis.',
