@@ -14,6 +14,19 @@ Our project focuses on leveraging the Credit Card Fraud Prediction Dataset avail
 
 This project is essential as it tackles the pressing issue of credit card fraud by using advanced explainable AI techniques on the Credit Card Fraud Prediction Dataset from Kaggle. It will provide a containerized web application that offers real-time fraud prediction, enhancing security measures for financial institutions and protecting consumers from fraudulent transactions.
 
+### Data
+
+**Source: https://www.kaggle.com/datasets/kelvinkelue/credit-card-fraud-prediction**
+
+The dataset "Credit Card Fraud Prediction" is designed to evaluate and compare various fraud detection models. It comprises 555,719 records across 22 attributes, featuring a comprehensive mix of categorical and numerical data types with no missing values. Essential components of the dataset include:
+
+- Transaction Details: Precise timestamps, merchant information, and transaction amounts.
+- Fraud Indicator: A binary attribute marking transactions as fraudulent or legitimate, serving as the primary target for predictive modeling.
+- Cardholder Information: Names, addresses, job titles, and demographics, providing a deep dive into the profiles involved in transactions.
+- Geographical Data: Location details for both merchants and cardholders to explore spatial patterns in fraud occurrences.
+
+This dataset is a rich resource that fosters the development, testing, and comparison of different fraud detection techniques. It is a valuable tool for researchers and practitioners dedicated to advancing the field of fraud detection through innovative modeling and analysis.
+
 ### Software Diagram
 
 The following software diagram captures the primary components and workflow of our system. The diagram illustrates how data is queried from Kaggle and stored in a Redis Database that is presisited via frequenct saving to the local system harddrive. Moreover, the diagram depicts the user's interaction with various routes via the Web Application, facilitating data access and job request submissions processed by the `Worker`. This entire process is encapsulated and deployed within a Docker container, seamlessly orchestrated by a Kubernetes cluster.
@@ -50,19 +63,6 @@ The following software diagram captures the primary components and workflow of o
 Note: All throughout the code source, strategic logging is implemented to alert the developer of important events and bugs that arise. Logs are stored in `logger.log`
 
 To view the logger for each container, execute the following: `docker exec -it <container_id> bash`. `logger.log` is found in `/app`. Logs concerning the `worker` container are found by executing the command for the `worker` container id. Get the container id by running: `docker ps -a`.
-
-### Data
-
-**Source: https://www.kaggle.com/datasets/kelvinkelue/credit-card-fraud-prediction**
-
-The dataset "Credit Card Fraud Prediction" is designed to evaluate and compare various fraud detection models. It comprises 555,719 records across 22 attributes, featuring a comprehensive mix of categorical and numerical data types with no missing values. Essential components of the dataset include:
-
-- Transaction Details: Precise timestamps, merchant information, and transaction amounts.
-- Fraud Indicator: A binary attribute marking transactions as fraudulent or legitimate, serving as the primary target for predictive modeling.
-- Cardholder Information: Names, addresses, job titles, and demographics, providing a deep dive into the profiles involved in transactions.
-- Geographical Data: Location details for both merchants and cardholders to explore spatial patterns in fraud occurrences.
-
-This dataset is a rich resource that fosters the development, testing, and comparison of different fraud detection techniques. It is a valuable tool for researchers and practitioners dedicated to advancing the field of fraud detection through innovative modeling and analysis.
 
 ### Flask Application
 
@@ -498,53 +498,55 @@ While the service is up (after executing `docker-compose up`), you may curl the 
       ```shell
       curl http://127.0.0.1:5173/help
       ```
+      
     - _expected output_
-    ```shell
-      Description of all application routes:
-      /transaction_data (GET): Returns all transaction data currently stored in Redis.
-        Example Command: curl http://127.0.0.1:5173/transaction_data
-
-      /transaction_data (POST): Fetches transaction data from Kaggle or disk and stores it in Redis.
-        Example Command: curl -X POST localhost:5173/transaction_data
-
-      /transaction_data (DELETE): Deletes all transaction data stored in Redis.
-        Example Command: curl -X DELETE localhost:5173/transaction_data
-
-      /transaction_data_view: Returns a default slice of the transaction data stored in Redis (first 5 entries).
-        Example Command: curl localhost:5173/transaction_data_view
-
-      /transaction_data_view?limit=<int>&offset=<int>: Returns a slice of the transaction data stored in Redis.
-        Example Command: curl "localhost:5173/transaction_data_view?limit=2&offset=7"
-
-      /amt_analysis: Returns statistical descriptions of the transaction amounts in the dataset.
-        Example Command: curl "localhost:5173/amt_analysis"
-
-      /amt_fraud_correlation: Returns the correlation between transaction amount and fraud status in the dataset.
-        Example Command: curl "localhost:5173/amt_fraud_correlation"
-
-      /fraudulent_zipcode_info: Returns the zipcode with the highest number of fraudulent transactions, and retrieves its geographic location.
-        Example Command: curl "localhost:5173/fraudulent_zipcode_info"
-
-      /fraud_by_state:  Returns the number of fraudulent transactions per state.
-        Example Command: curl "localhost:5173/fraud_by_state"
-
-      /ai_analysis: Returns the most important features and feature importances from the trained model.
-        Example Command: curl "localhost:5173/ai_analysis"
-
-      /jobs (GET): Returns all job ids in the database.
-        Example Command: curl "localhost:5173/jobs"
-
-      /jobs (DELETE): Clears all jobs from the jobs database.
-        Example Command: curl -X DELETE "localhost:5173/jobs"
-
-      /jobs (POST): Creates a job for plotting a feature specified by the user.
-        Example Command: curl -X POST localhost:5173/jobs -d "{"graph_feature": "gender"}" -H "Content-Type: application/json"
-
-      /jobs/<id>: Returns information about the specified job id.
-        Example Command: curl -X DELETE "localhost:5173/jobs/99e6820f-0e4f-4b55-8052-7845ea390a44"
-
-      /results/<id>:  Returns the job result as a image file download.
-        Example Command: curl -X DELETE "localhost:5173/results/99e6820f-0e4f-4b55-8052-7845ea390a44"
+    
+      ```shell
+        Description of all application routes:
+        /transaction_data (GET): Returns all transaction data currently stored in Redis.
+          Example Command: curl http://127.0.0.1:5173/transaction_data
+      
+        /transaction_data (POST): Fetches transaction data from Kaggle or disk and stores it in Redis.
+          Example Command: curl -X POST localhost:5173/transaction_data
+      
+        /transaction_data (DELETE): Deletes all transaction data stored in Redis.
+          Example Command: curl -X DELETE localhost:5173/transaction_data
+      
+        /transaction_data_view: Returns a default slice of the transaction data stored in Redis (first 5 entries).
+          Example Command: curl localhost:5173/transaction_data_view
+      
+        /transaction_data_view?limit=<int>&offset=<int>: Returns a slice of the transaction data stored in Redis.
+          Example Command: curl "localhost:5173/transaction_data_view?limit=2&offset=7"
+      
+        /amt_analysis: Returns statistical descriptions of the transaction amounts in the dataset.
+          Example Command: curl "localhost:5173/amt_analysis"
+      
+        /amt_fraud_correlation: Returns the correlation between transaction amount and fraud status in the dataset.
+          Example Command: curl "localhost:5173/amt_fraud_correlation"
+      
+        /fraudulent_zipcode_info: Returns the zipcode with the highest number of fraudulent transactions, and retrieves its geographic location.
+          Example Command: curl "localhost:5173/fraudulent_zipcode_info"
+      
+        /fraud_by_state:  Returns the number of fraudulent transactions per state.
+          Example Command: curl "localhost:5173/fraud_by_state"
+      
+        /ai_analysis: Returns the most important features and feature importances from the trained model.
+          Example Command: curl "localhost:5173/ai_analysis"
+      
+        /jobs (GET): Returns all job ids in the database.
+          Example Command: curl "localhost:5173/jobs"
+      
+        /jobs (DELETE): Clears all jobs from the jobs database.
+          Example Command: curl -X DELETE "localhost:5173/jobs"
+      
+        /jobs (POST): Creates a job for plotting a feature specified by the user.
+          Example Command: curl -X POST localhost:5173/jobs -d "{"graph_feature": "gender"}" -H "Content-Type: application/json"
+      
+        /jobs/<id>: Returns information about the specified job id.
+          Example Command: curl -X DELETE "localhost:5173/jobs/99e6820f-0e4f-4b55-8052-7845ea390a44"
+      
+        /results/<id>:  Returns the job result as a image file download.
+          Example Command: curl -X DELETE "localhost:5173/results/99e6820f-0e4f-4b55-8052-7845ea390a44"
       ```
 #### Instructions on How to Run Test Cases
 
