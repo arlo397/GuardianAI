@@ -474,7 +474,7 @@ While the service is up (after executing `docker-compose up`), you may curl the 
       ```
 14. **Retrieve Graph Image from Submitted Job**
 
-    - **Description**: This endpoint returns a png file download of the graphs requested from the user. 
+    - **Description**: This endpoint returns a png file download of the graphs requested from the user based on the independent variable submitted in the job request. 
 
       ```shell
       curl http://127.0.0.1:5173/results/af7c1fe6-d669-414e-b066-e9733f0de7a8
@@ -502,49 +502,49 @@ While the service is up (after executing `docker-compose up`), you may curl the 
     ```shell
       Description of all application routes:
       /transaction_data (GET): Returns all transaction data currently stored in Redis.
-        Example curl: curl http://127.0.0.1:5173/transaction_data
+        Example Command: curl http://127.0.0.1:5173/transaction_data
 
       /transaction_data (POST): Fetches transaction data from Kaggle or disk and stores it in Redis.
-        Example curl: curl -X POST localhost:5173/transaction_data
+        Example Command: curl -X POST localhost:5173/transaction_data
 
       /transaction_data (DELETE): Deletes all transaction data stored in Redis.
-        Example curl: curl -X DELETE localhost:5173/transaction_data
+        Example Command: curl -X DELETE localhost:5173/transaction_data
 
       /transaction_data_view: Returns a default slice of the transaction data stored in Redis (first 5 entries).
-        Example curl: curl localhost:5173/transaction_data_view
+        Example Command: curl localhost:5173/transaction_data_view
 
       /transaction_data_view?limit=<int>&offset=<int>: Returns a slice of the transaction data stored in Redis.
-        Example curl: curl "localhost:5173/transaction_data_view?limit=2&offset=7"
+        Example Command: curl "localhost:5173/transaction_data_view?limit=2&offset=7"
 
       /amt_analysis: Returns statistical descriptions of the transaction amounts in the dataset.
-        Example curl: curl "localhost:5173/amt_analysis"
+        Example Command: curl "localhost:5173/amt_analysis"
 
       /amt_fraud_correlation: Returns the correlation between transaction amount and fraud status in the dataset.
-        Example curl: curl "localhost:5173/amt_fraud_correlation"
+        Example Command: curl "localhost:5173/amt_fraud_correlation"
 
       /fraudulent_zipcode_info: Returns the zipcode with the highest number of fraudulent transactions, and retrieves its geographic location.
-        Example curl: curl "localhost:5173/fraudulent_zipcode_info"
+        Example Command: curl "localhost:5173/fraudulent_zipcode_info"
 
       /fraud_by_state:  Returns the number of fraudulent transactions per state.
-        Example curl: curl "localhost:5173/fraud_by_state"
+        Example Command: curl "localhost:5173/fraud_by_state"
 
       /ai_analysis: Returns the most important features and feature importances from the trained model.
-        Example curl: curl "localhost:5173/ai_analysis"
+        Example Command: curl "localhost:5173/ai_analysis"
 
       /jobs (GET): Returns all job ids in the database.
-        Example curl: curl "localhost:5173/jobs"
+        Example Command: curl "localhost:5173/jobs"
 
       /jobs (DELETE): Clears all jobs from the jobs database.
-        Example curl: curl -X DELETE "localhost:5173/jobs"
+        Example Command: curl -X DELETE "localhost:5173/jobs"
 
       /jobs (POST): Creates a job for plotting a feature specified by the user.
-        Example curl: curl -X POST localhost:5173/jobs -d "{"graph_feature": "gender"}" -H "Content-Type: application/json"
+        Example Command: curl -X POST localhost:5173/jobs -d "{"graph_feature": "gender"}" -H "Content-Type: application/json"
 
       /jobs/<id>: Returns information about the specified job id.
-        Example curl: curl -X DELETE "localhost:5173/jobs/99e6820f-0e4f-4b55-8052-7845ea390a44"
+        Example Command: curl -X DELETE "localhost:5173/jobs/99e6820f-0e4f-4b55-8052-7845ea390a44"
 
       /results/<id>:  Returns the job result as a image file download.
-        Example curl: curl -X DELETE "localhost:5173/results/99e6820f-0e4f-4b55-8052-7845ea390a44"
+        Example Command: curl -X DELETE "localhost:5173/results/99e6820f-0e4f-4b55-8052-7845ea390a44"
       ```
 #### Instructions on How to Run Test Cases
 

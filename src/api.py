@@ -559,7 +559,7 @@ def get_help():
     output_string = 'Description of all application routes:\n'
     # Print each endpoint's information in a single line
     for endpoint, info in endpoints.items():
-        output_string += f"{endpoint}: {info['description']}\n   Example curl: {info['example_curl']}\n"  
+        output_string += f"{endpoint}: {info['description']}\n   Example Command: {info['example_curl']}\n"  
         output_string += "\n"
 
     return output_string
