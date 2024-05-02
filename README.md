@@ -18,7 +18,7 @@ This project is essential as it tackles the pressing issue of credit card fraud 
 
 The following software diagram captures the primary components and workflow of our system. The diagram illustrates how data is queried from Kaggle and stored in a Redis Database that is presisited via frequenct saving to the local system harddrive. Moreover, the diagram depicts the user's interaction with various routes via the Web Application, facilitating data access and job request submissions processed by the `Worker`. This entire process is encapsulated and deployed within a Docker container, seamlessly orchestrated by a Kubernetes cluster.
 
-![alt text](https://github.com/arlo397/GuardianAI/blob/main/softwareDiagram.png)
+<img src="img/softwareDiagram.png" alt="Alt text"  />
 
 ### Description of Folder Contents
 
@@ -93,166 +93,166 @@ While the service is up (after executing `docker-compose up`), you may curl the 
 
 1. **POST Data to Redis Database Endpoint**
 
-- **Description**: This endpoint stores the raw data into a Redis database that supports data persistence across container executions. POSTing the data takes a few minutes.
+   - **Description**: This endpoint stores the raw data into a Redis database that supports data persistence across container executions. POSTing the data takes a few minutes.
 
-```shell
-curl -X POST localhost:5173/data
-```
+     ```shell
+     curl -X POST localhost:5173/data
+     ```
 
-- _expected output_
+   - _expected output_
 
-```shell
-Data POSTED into Redis Database.
-```
+     ```shell
+     Data POSTED into Redis Database.
+     ```
 
 2. **GET Data from Redis Database Endpoint**
 
-- **Description**: This endpoint retrieves all of the data stored from the Redis database as a list of dictionaries. GETting the data takes a few minutes.
+   - **Description**: This endpoint retrieves all of the data stored from the Redis database as a list of dictionaries. GETting the data takes a few minutes.
 
-```shell
-curl -X GET localhost:5173/data
-```
+     ```shell
+     curl -X GET localhost:5173/data
+     ```
 
-- _expected output_
+   - _expected output_
 
-```shell
-{
-    "Unnamed: 0": 283599,
-    "amt": 55.49,
-    "category": "entertainment",
-    "cc_num": 4428150000000000.0,
-    "city": "Colton",
-    "city_pop": 761,
-    "dob": "30/06/1943",
-    "first": "Brittany",
-    "gender": "F",
-    "is_fraud": 0,
-    "job": "Chief Marketing Officer",
-    "last": "Guerra",
-    "lat": 46.5901,
-    "long": -117.1692,
-    "merch_lat": 45.957848,
-    "merch_long": -116.587284,
-    "merchant": "fraud_Effertz, Welch and Schowalter",
-    "state": "WA",
-    "street": "79209 Gary Dale",
-    "trans_date_trans_time": "05/10/2020 11:04",
-    "trans_num": "f6ff017f02cc92423a2b88a0be0d387a",
-    "unix_time": 1380971076,
-    "zip": 99113
-  },
-  ...
-  {
-    "Unnamed: 0": 12259,
-    "amt": 1.45,
-    "category": "misc_net",
-    "cc_num": 4.50254e+18,
-    "city": "Ash Flat",
-    "city_pop": 2856,
-    "dob": "27/08/1926",
-    "first": "Stephanie",
-    "gender": "F",
-    "is_fraud": 0,
-    "job": "Hydrologist",
-    "last": "Cummings",
-    "lat": 36.2201,
-    "long": -91.6421,
-    "merch_lat": 36.198675,
-    "merch_long": -90.757786,
-    "merchant": "fraud_Nader-Heller",
-    "state": "AR",
-    "street": "1025 Robin Square",
-    "trans_date_trans_time": "25/06/2020 05:50",
-    "trans_num": "fad0975d67dd801858619f5009a9fb98",
-    "unix_time": 1372139451,
-    "zip": 72513
-  }
-```
+     ```shell
+     {
+         "Unnamed: 0": 283599,
+         "amt": 55.49,
+         "category": "entertainment",
+         "cc_num": 4428150000000000.0,
+         "city": "Colton",
+         "city_pop": 761,
+         "dob": "30/06/1943",
+         "first": "Brittany",
+         "gender": "F",
+         "is_fraud": 0,
+         "job": "Chief Marketing Officer",
+         "last": "Guerra",
+         "lat": 46.5901,
+         "long": -117.1692,
+         "merch_lat": 45.957848,
+         "merch_long": -116.587284,
+         "merchant": "fraud_Effertz, Welch and Schowalter",
+         "state": "WA",
+         "street": "79209 Gary Dale",
+         "trans_date_trans_time": "05/10/2020 11:04",
+         "trans_num": "f6ff017f02cc92423a2b88a0be0d387a",
+         "unix_time": 1380971076,
+         "zip": 99113
+       },
+       ...
+       {
+         "Unnamed: 0": 12259,
+         "amt": 1.45,
+         "category": "misc_net",
+         "cc_num": 4.50254e+18,
+         "city": "Ash Flat",
+         "city_pop": 2856,
+         "dob": "27/08/1926",
+         "first": "Stephanie",
+         "gender": "F",
+         "is_fraud": 0,
+         "job": "Hydrologist",
+         "last": "Cummings",
+         "lat": 36.2201,
+         "long": -91.6421,
+         "merch_lat": 36.198675,
+         "merch_long": -90.757786,
+         "merchant": "fraud_Nader-Heller",
+         "state": "AR",
+         "street": "1025 Robin Square",
+         "trans_date_trans_time": "25/06/2020 05:50",
+         "trans_num": "fad0975d67dd801858619f5009a9fb98",
+         "unix_time": 1372139451,
+         "zip": 72513
+       }
+     ```
 
 3. **DELETE Data from Redis Database Endpoint**
 
-- **Description**: This endpoint deletes all of the data stored in the Redis database. To execute other endpoints that rely on the data, `curl -X POST curl localhost:5173/data` must be re-executed.
+   - **Description**: This endpoint deletes all of the data stored in the Redis database. To execute other endpoints that rely on the data, `curl -X POST curl localhost:5173/data` must be re-executed.
 
-```shell
-curl -X DELETE curl localhost:5173/data
-```
+     ```shell
+     curl -X DELETE curl localhost:5173/data
+     ```
 
-- _expected output_
+   - _expected output_
 
-```shell
-Data DELETED from Redis Database.
-```
+     ```shell
+     Data DELETED from Redis Database.
+     ```
 
 4. **Data Example Endpoint**
 
-- **Description**: This endpoint provides a quick look at the dataset by returning the first five entries. If the user wishes to see n records offset by some number, they may specify a limit and offset query parameter, otherwise, the first five entries are returned via: `curl localhost:5173/transaction_data_view`
+   - **Description**: This endpoint provides a quick look at the dataset by returning the first five entries. If the user wishes to see n records offset by some number, they may specify a limit and offset query parameter, otherwise, the first five entries are returned via: `curl localhost:5173/transaction_data_view`
 
-```shell
-curl "localhost:5173/transaction_data_view?limit=2&offset=7"
-```
+     ```shell
+     curl "localhost:5173/transaction_data_view?limit=2&offset=7"
+     ```
 
-- _expected output_
+   - _expected output_
 
-```shell
- [
-  {
-    "amt": 10.37,
-    "category": "personal_care",
-    "cc_num": 3589290000000000.0,
-    "city": "Spencer",
-    "city_pop": 343,
-    "dob": "05/03/1972",
-    "first": "Paula",
-    "gender": "F",
-    "is_fraud": 0,
-    "job": "Development worker, international aid",
-    "last": "Estrada",
-    "lat": 43.7557,
-    "long": -97.5936,
-    "merch_lat": 44.495498,
-    "merch_long": -97.728453,
-    "merchant": "fraud_Reichel LLC",
-    "state": "SD",
-    "street": "350 Stacy Glens",
-    "trans_date_trans_time": "21/06/2020 12:15",
-    "trans_num": "8be473af4f05fc6146ea55ace73e7ca2",
-    "unix_time": 1371816950,
-    "zip": 57374
-  },
-  {
-    "amt": 4.37,
-    "category": "shopping_pos",
-    "cc_num": 3596360000000000.0,
-    "city": "Morrisdale",
-    "city_pop": 3688,
-    "dob": "27/05/1973",
-    "first": "David",
-    "gender": "M",
-    "is_fraud": 0,
-    "job": "Advice worker",
-    "last": "Everett",
-    "lat": 41.0001,
-    "long": -78.2357,
-    "merch_lat": 41.546067,
-    "merch_long": -78.120238,
-    "merchant": "fraud_Goyette, Howell and Collier",
-    "state": "PA",
-    "street": "4138 David Fall",
-    "trans_date_trans_time": "21/06/2020 12:16",
-    "trans_num": "71a1da150d1ce510193d7622e08e784e",
-    "unix_time": 1371816970,
-    "zip": 16858
-  }
-]
-```
+     ```shell
+      [
+       {
+         "amt": 10.37,
+         "category": "personal_care",
+         "cc_num": 3589290000000000.0,
+         "city": "Spencer",
+         "city_pop": 343,
+         "dob": "05/03/1972",
+         "first": "Paula",
+         "gender": "F",
+         "is_fraud": 0,
+         "job": "Development worker, international aid",
+         "last": "Estrada",
+         "lat": 43.7557,
+         "long": -97.5936,
+         "merch_lat": 44.495498,
+         "merch_long": -97.728453,
+         "merchant": "fraud_Reichel LLC",
+         "state": "SD",
+         "street": "350 Stacy Glens",
+         "trans_date_trans_time": "21/06/2020 12:15",
+         "trans_num": "8be473af4f05fc6146ea55ace73e7ca2",
+         "unix_time": 1371816950,
+         "zip": 57374
+       },
+       {
+         "amt": 4.37,
+         "category": "shopping_pos",
+         "cc_num": 3596360000000000.0,
+         "city": "Morrisdale",
+         "city_pop": 3688,
+         "dob": "27/05/1973",
+         "first": "David",
+         "gender": "M",
+         "is_fraud": 0,
+         "job": "Advice worker",
+         "last": "Everett",
+         "lat": 41.0001,
+         "long": -78.2357,
+         "merch_lat": 41.546067,
+         "merch_long": -78.120238,
+         "merchant": "fraud_Goyette, Howell and Collier",
+         "state": "PA",
+         "street": "4138 David Fall",
+         "trans_date_trans_time": "21/06/2020 12:16",
+         "trans_num": "71a1da150d1ce510193d7622e08e784e",
+         "unix_time": 1371816970,
+         "zip": 16858
+       }
+     ]
+     ```
 
 5. **Amount Analysis Endpoint**
 
    - **Description**: This endpoint provides statistical summaries of the transaction amounts.
 
-   ```shell
-   curl localhost:5173/amt_analysis -X GET
-   ```
+     ```shell
+     curl localhost:5173/amt_analysis -X GET
+     ```
 
    - _expected output_
 
@@ -325,8 +325,8 @@ curl "localhost:5173/transaction_data_view?limit=2&offset=7"
        "most_fraudulent_zipcode": "67020"
      }
      ```
-
-   <img src="googlemap_location.jpg" alt="Alt text"  />
+     
+     <img src="img/googlemap_location.png" alt="Alt text"  />
 
 8. **Fraud by State Endpoint**
 
@@ -413,98 +413,90 @@ curl "localhost:5173/transaction_data_view?limit=2&offset=7"
 
 10. **Retrieve All Existing Jobs Endpoint**
 
- - **Description**: This endpoint returns all of the existing job uuids from the database. 
+    - **Description**: This endpoint returns all of the existing job uuids from the database. 
 
-     ```shell
-     curl localhost:5173/jobs -X GET
-     ```
+      ```shell
+      curl localhost:5173/jobs -X GET
+      ```
 
-   - _expected output_
+    - _expected output_
 
-     ```shell
+      ```shell
       [af7c1fe6-d669-414e-b066-e9733f0de7a8, 08c71152-c552-42e7-b094-f510ff44e9cb]
-     ```
+      ```
 
 11. **Clear Jobs Endpoint**
 
-   - **Description**: This endpoint clears all jobs from the jobs database. 
+    - **Description**: This endpoint clears all jobs from the jobs database. 
 
-     ```shell
-     curl -X DELETE localhost:5173/jobs 
-     ```
+      ```shell
+      curl -X DELETE localhost:5173/jobs 
+      ```
 
-   - _expected output_
-     ```shell
-     OK
-     ```
+    - _expected output_
+
+      ```shell
+      OK
+      ```
 
 12. **Generate Graph for Feature Endpoint**
-- **Description**: This endpoint initializes a job based on the user's input in JSON format, specifically their graph feature preferences. The job is then queued for processing, allowing the worker to generate a PNG plot. Once generated, the plot can be downloaded and viewed by the user. 
 
-    Based on what information the user desires to analyze, they may submit one of the following graph features which will be utilized as the independent variable of the generated graph. If the user fails to submit a feature from the feature options listed below or submits the `curl` command incorrectly, a respective error message with intructions to correct the `POST` request will be generated. 
-    
-    Feature Options for Graphing: ['trans_month','trans_dayOfWeek','gender','category']
+    - **Description**: This endpoint initializes a job based on the user's input in JSON format, specifically their graph feature preferences. The job is then queued for processing, allowing the worker to generate a PNG plot. Once generated, the plot can be downloaded and viewed by the user. 
 
-     ```shell
-     curl -X POST localhost:5173/jobs -d '{"graph_feature": "gender"}' -H "Content-Type: application/json"
-     ```
+      Based on what information the user desires to analyze, they may submit one of the following graph features which will be utilized as the independent variable of the generated graph. If the user fails to submit a feature from the feature options listed below or submits the `curl` command incorrectly, a respective error message with intructions to correct the `POST` request will be generated. 
 
-   - _expected output_
+      Feature Options for Graphing: ['trans_month','trans_dayOfWeek','gender','category']
 
-    ```shell
+      ```shell
+      curl -X POST localhost:5173/jobs -d '{"graph_feature": "gender"}' -H "Content-Type: application/json"
+      ```
+
+    - _expected output_
+
+      ```shell
       {"job_id": "af7c1fe6-d669-414e-b066-e9733f0de7a8"}
-    ```
-
+      ```
 13. **Retrieve Job Status Endpoint**
-- **Description**: This endpoint provides details about a specified job ID, facilitating users in querying the status of submitted jobs and recalling the feature intended for plotting. 
 
-     ```shell
-     curl http://127.0.0.1:5173/jobs/ af7c1fe6-d669-414e-b066-e9733f0de7a8
-     ```
+    - **Description**: This endpoint provides details about a specified job ID, facilitating users in querying the status of submitted jobs and recalling the feature intended for plotting. 
 
-   - _expected output_
+      ```shell
+      curl http://127.0.0.1:5173/jobs/ af7c1fe6-d669-414e-b066-e9733f0de7a8
+      ```
 
-    ```shell
-    {
-      'status': 'queued',
-      'graph_feature': 'gender',
-    }
-    ```
+    - _expected output_
 
+      ```shell
+      {
+        'status': 'queued',
+        'graph_feature': 'gender',
+      }
+      ```
 14. **Retrieve Graph Image from Submitted Job**
-- **Description**: This endpoint returns a png file download of the graphs requested from the user. 
-    ```shell
-    curl http://127.0.0.1:5173/results/af7c1fe6-d669-414e-b066-e9733f0de7a8
-    ```
-   - _expected output_
 
-   ```shell
+    - **Description**: This endpoint returns a png file download of the graphs requested from the user. 
 
+      ```shell
+      curl http://127.0.0.1:5173/results/af7c1fe6-d669-414e-b066-e9733f0de7a8
+      ```
 
-  ```
+    - *expected output*
 
-  Graphs: 
-  ![alt text](https://github.com/arlo397/GuardianAI/blob/main/trans_month.png)
+      <img src="img/trans_month.png" alt="Alt text"  />
 
-  ![alt text](https://github.com/arlo397/GuardianAI/blob/main/trans_week.png)
+      <img src="img/trans_week.png" alt="Alt text"  />
 
-  ![alt text](https://github.com/arlo397/GuardianAI/blob/main/trans_category.png)
+      <img src="img/trans_category.png" alt="Alt text"  />
 
-  ![alt text](https://github.com/arlo397/GuardianAI/blob/main/gender.png)
-
+      <img src="img/gender.png" alt="Alt text"  />
 
 15. **Informational Help Endpoint**
-- **Description**: This endpoint returns a description of all of the routes as well as an example curl command.  
- ```shell
-    curl http://127.0.0.1:5173/help
-  ```
 
-  - _expected output_
+    - **Description**: This endpoint returns a description of all of the routes as well as an example curl command.  
 
-  ```
-
-  ```
-
+      ```shell
+      curl http://127.0.0.1:5173/help
+      ```
 #### Instructions on How to Run Test Cases
 
 Unit tests for the application are stored in the `/tests` directory and copied over to the `app` directory in the container (alongside the main scripts). To execute the test scripts, enter into the respective container interactively and execute `pytest`.
