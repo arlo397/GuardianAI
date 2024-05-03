@@ -550,16 +550,16 @@ def get_help():
             'transactions (list of objects) Parameters': [f'trans_date_trans_time ({TRANSACTION_DATE_TIME_FORMAT})', 'merchant (str)', 'category (str)', 'amt (float)', 'lat (float)', 'long (float)', 'job (str)', 'merch_lat (float)', 'merch_long (float)'],
             'example_curl': 'curl -X POST localhost:5173/jobs -d "{\"graph_feature\": \"gender\"}" -H "Content-Type: application/json"'
         },
-        '/jobs/<id> (GET)' :{
+        '/jobs/<id> (GET)': {
             'description': 'Returns information about the specified job id.',
             'example_curl': 'curl "localhost:5173/jobs/99e6820f-0e4f-4b55-8052-7845ea390a44"'
         },
-        '/results/<id> (GET)' :{
-            'description': ' Returns the job result as a image file download.',
+        '/results/<id> (GET)': {
+            'description': 'Returns the job result as a image file download or list of ML model predictions.',
             'example_curl': 'curl "localhost:5173/results/99e6820f-0e4f-4b55-8052-7845ea390a44"'
         },
     }
-
+    
     output_string = 'Description of all application routes:\n'
     # Print each endpoint's information in a single line
     for endpoint, info in endpoints.items():

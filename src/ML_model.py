@@ -7,6 +7,31 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import accuracy_score
+import joblib
+
+
+def save_model(model, filename):
+    """
+    Saves the trained model to a file.
+
+    Args:
+        model (RandomForestClassifier): The trained model to save.
+        filename (str): The filename for the saved model.
+    """
+    joblib.dump(model, filename)
+    print(f"Model saved to {filename}")
+
+def load_model(filename):
+    """
+    Load a trained model from a file.
+
+    Args:
+        filename (str): The filename of the saved model.
+
+    Returns:
+        RandomForestClassifier: The loaded model.
+    """
+    return joblib.load(filename)
 
 
 def train_model() -> RandomForestClassifier:
@@ -77,10 +102,12 @@ def train_model() -> RandomForestClassifier:
     X_test = X_test.drop(columns=columns).join(test_encoded)
 
     # Train the RandomForestClassifier
-    model = RandomForestClassifier(random_state=321)
-    model.fit(X_train, y_train)
+    # model = RandomForestClassifier(random_state=321)
+    # model.fit(X_train, y_train)
+    # save_model(model, "trained_fraud_model.pkl")
 
     # Predict and evaluate the model on the validation set
+    model = load_model("trained_fraud_model.pkl")
     predictions = model.predict(X_val)
     accuracy = accuracy_score(y_val, predictions)
     print("Model accuracy:", accuracy)

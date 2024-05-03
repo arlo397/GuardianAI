@@ -51,14 +51,12 @@ The following software diagram captures the primary components and workflow of o
       '{"graph_feature": "gender"}' -H "Content-Type: application/json"
   - [DELETE] `/jobs`: Deletes all jobs
   - [GET] `/results/<jobid>`: Return requested job result in the form of a JSON dictionary. If the job has not yet been finished, the api returns a message indicating so.
-- `src/jobs.py`: Initializes databases and provides the functionality to create/submit/put jobs on the queue.
 - `src/worker.py`: Pull jobs off of the queue and executes job functionality.
 - `src/ML_model.py`: Implements a Random-Forest Classifier to detect fraud with a high accuracy of 99%, leveraging feature importance analysis to enhance predictive insights.
 - `requirements.txt`: Text file that lists all of the Python non-standard libraries used to develop the code.
 - `data/`: Local Directory for Redis container to presist data to file system across container executions.
-- `test/test_api.py`: Tests functionality in `src/api.py`
-- `test/test_jobs.py`: Tests functionailty in `src/jobs.py`
-- `test/test_worker.py`: Tests functionailty in `src/worker.py`
+- `src/test_api.py`: Tests functionality in `src/api.py`
+- `src/test_worker.py`: Tests functionailty in `src/worker.py`
 
 Note: All throughout the code source, strategic logging is implemented to alert the developer of important events and bugs that arise. Logs are stored in `logger.log`
 
@@ -512,25 +510,25 @@ While the service is up (after executing `docker-compose up`), you may curl the 
         /transaction_data (DELETE): Deletes all transaction data stored in Redis.
           Example Command: curl -X DELETE localhost:5173/transaction_data
       
-        /transaction_data_view: Returns a default slice of the transaction data stored in Redis (first 5 entries).
+        /transaction_data_view(GET): Returns a default slice of the transaction data stored in Redis (first 5 entries).
           Example Command: curl localhost:5173/transaction_data_view
       
-        /transaction_data_view?limit=<int>&offset=<int>: Returns a slice of the transaction data stored in Redis.
+        /transaction_data_view?limit=<int>&offset=<int> (GET): Returns a slice of the transaction data stored in Redis.
           Example Command: curl "localhost:5173/transaction_data_view?limit=2&offset=7"
       
-        /amt_analysis: Returns statistical descriptions of the transaction amounts in the dataset.
+        /amt_analysis (GET): Returns statistical descriptions of the transaction amounts in the dataset.
           Example Command: curl "localhost:5173/amt_analysis"
       
-        /amt_fraud_correlation: Returns the correlation between transaction amount and fraud status in the dataset.
+        /amt_fraud_correlation (GET): Returns the correlation between transaction amount and fraud status in the dataset.
           Example Command: curl "localhost:5173/amt_fraud_correlation"
       
-        /fraudulent_zipcode_info: Returns the zipcode with the highest number of fraudulent transactions, and retrieves its geographic location.
+        /fraudulent_zipcode_info (GET): Returns the zipcode with the highest number of fraudulent transactions, and retrieves its geographic location.
           Example Command: curl "localhost:5173/fraudulent_zipcode_info"
       
-        /fraud_by_state:  Returns the number of fraudulent transactions per state.
+        /fraud_by_state (GET):  Returns the number of fraudulent transactions per state.
           Example Command: curl "localhost:5173/fraud_by_state"
       
-        /ai_analysis: Returns the most important features and feature importances from the trained model.
+        /ai_analysis (GET): Returns the most important features and feature importances from the trained model.
           Example Command: curl "localhost:5173/ai_analysis"
       
         /jobs (GET): Returns all job ids in the database.
@@ -542,11 +540,11 @@ While the service is up (after executing `docker-compose up`), you may curl the 
         /jobs (POST): Creates a job for plotting a feature specified by the user.
           Example Command: curl -X POST localhost:5173/jobs -d "{"graph_feature": "gender"}" -H "Content-Type: application/json"
       
-        /jobs/<id>: Returns information about the specified job id.
-          Example Command: curl -X DELETE "localhost:5173/jobs/99e6820f-0e4f-4b55-8052-7845ea390a44"
+        /jobs/<id> (GET): Returns information about the specified job id.
+          Example Command: curl -X "localhost:5173/jobs/99e6820f-0e4f-4b55-8052-7845ea390a44"
       
-        /results/<id>:  Returns the job result as a image file download.
-          Example Command: curl -X DELETE "localhost:5173/results/99e6820f-0e4f-4b55-8052-7845ea390a44"
+        /results/<id> (GET): Returns the job result as a image file download.
+          Example Command: curl -X "localhost:5173/results/99e6820f-0e4f-4b55-8052-7845ea390a44"
       ```
 #### Instructions on How to Run Test Cases
 
