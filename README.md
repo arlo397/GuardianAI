@@ -52,7 +52,8 @@ The following software diagram captures the primary components and workflow of o
   - [DELETE] `/jobs`: Deletes all jobs
   - [GET] `/results/<jobid>`: Return requested job result in the form of a JSON dictionary. If the job has not yet been finished, the api returns a message indicating so.
 - `src/worker.py`: Pull jobs off of the queue and executes job functionality.
-- `src/ML_model.py`: Implements a Random-Forest Classifier to detect fraud with a high accuracy of 99%, leveraging feature importance analysis to enhance predictive insights.
+- `src/ml/random_forest_model.py`: Implements a Random-Forest Classifier to detect fraud with a high accuracy of 99%, leveraging feature importance analysis to enhance predictive insights.
+- `src/ml/nn_ml_model.py`: Implements a nn Classifier to detect fraud with a high accuracy of 99.5%.
 - `requirements.txt`: Text file that lists all of the Python non-standard libraries used to develop the code.
 - `data/`: Local Directory for Redis container to presist data to file system across container executions.
 - `src/test_api.py`: Tests functionality in `src/api.py`
@@ -94,13 +95,13 @@ While the service is up (after executing `docker-compose up`), you may curl the 
    - **Description**: This endpoint stores the raw data into a Redis database that supports data persistence across container executions. POSTing the data takes a few minutes.
 
      ```shell
-     curl -X POST localhost:5173/data
+     curl -X POST localhost:5173/transaction_data
      ```
 
    - _expected output_
 
      ```shell
-     Data POSTED into Redis Database.
+     OK
      ```
 
 2. **GET Data from Redis Database Endpoint**
@@ -108,7 +109,7 @@ While the service is up (after executing `docker-compose up`), you may curl the 
    - **Description**: This endpoint retrieves all of the data stored from the Redis database as a list of dictionaries. GETting the data takes a few minutes.
 
      ```shell
-     curl -X GET localhost:5173/data
+     curl localhost:5173/transaction_data
      ```
 
    - _expected output_
@@ -172,13 +173,13 @@ While the service is up (after executing `docker-compose up`), you may curl the 
    - **Description**: This endpoint deletes all of the data stored in the Redis database. To execute other endpoints that rely on the data, `curl -X POST curl localhost:5173/data` must be re-executed.
 
      ```shell
-     curl -X DELETE curl localhost:5173/data
+     curl -X DELETE localhost:5173/transaction_data
      ```
 
    - _expected output_
 
      ```shell
-     Data DELETED from Redis Database.
+     OK
      ```
 
 4. **Data Example Endpoint**
@@ -249,7 +250,7 @@ While the service is up (after executing `docker-compose up`), you may curl the 
    - **Description**: This endpoint provides statistical summaries of the transaction amounts.
 
      ```shell
-     curl localhost:5173/amt_analysis -X GET
+     curl localhost:5173/amt_analysis
      ```
 
    - _expected output_
@@ -281,7 +282,7 @@ While the service is up (after executing `docker-compose up`), you may curl the 
    - **Description**: This endpoint calculates the correlation between transaction amounts (`amt`) and their fraud status (`is_fraud`). Correlation measures the degree to which two variables move in relation to each other. A higher positive correlation means that higher transaction amounts might be more associated with fraudulent transactions, whereas a negative correlation would indicate the opposite.
 
      ```shell
-     curl localhost:5173/amt_fraud_correlation -X GET
+     curl localhost:5173/amt_fraud_correlation
      ```
 
    - _expected output_
@@ -304,7 +305,7 @@ While the service is up (after executing `docker-compose up`), you may curl the 
    - **Description**: This endpoint calculates which zipcode has the highest number of fraudulent transactions from the dataset and retrieves geographical information for that zipcode. It serves to identify potential hotspots of fraudulent activity and provides a quick link to view the location on Google Maps.
 
      ```shell
-     curl localhost:5173/fraudulent_zipcode_info -X GET
+     curl localhost:5173/fraudulent_zipcode_info
      ```
 
    - _expected output_
@@ -331,7 +332,7 @@ While the service is up (after executing `docker-compose up`), you may curl the 
    - **Description**: This endpoint aggregates the number of fraudulent transactions from the `fraud_test.csv` dataset by state. It provides a detailed count of fraudulent activities grouped by each state to help identify regions with higher instances of fraud.
 
      ```shell
-     curl localhost:5173/fraud_by_state -X GET
+     curl localhost:5173/fraud_by_state
      ```
 
    - _expected output_
@@ -357,64 +358,14 @@ While the service is up (after executing `docker-compose up`), you may curl the 
      }
      ```
 
-9. **AI Analysis Endpoint**
-
-   - **Description**: This endpoint is dedicated to analyzing and returning the importance of features from a trained machine learning model. It invokes the `train_model` function, which orchestrates the data preparation, model training, and computation of feature importances. Once the model is trained, the function assesses which features significantly impact the model's predictions and returns these feature importances in a structured JSON format. This helps in understanding the model's decision-making process and in identifying the most influential factors in the dataset.
-
-   - **More details of our AI model:**
-
-     - Model Description
-
-       Our AI model employs a RandomForestClassifier to effectively detect fraudulent transactions. This model is ideal for handling complex datasets with a mixture of categorical and numerical features, making it particularly suitable for analyzing transaction data where multiple variables influence the likelihood of fraud.
-
-     - Performance:
-
-       On the test set, our model achieves an accuracy of 99%, highlighting its efficacy in identifying fraudulent transactions accurately.
-
-     - Analysis Tools:
-
-       We leverage feature importance techniques, which help in understanding the predictive power of each variable. This insight is critical for people to focus on the most impactful features.
-
-     ```shell
-     curl localhost:5173/ai_analysis -X GET
-     ```
-
-   - _expected output_
-
-     ```shell
-     {
-       "feature_importances": [
-         {
-           "feature": "amt",
-           "importance": 0.29070396208787314
-         },
-         {
-           "feature": "time",
-           "importance": 0.07287082998920907
-         },
-         {
-           "feature": "unix_time",
-           "importance": 0.05540575128302068
-         },
-         {
-           "feature": "merch_long",
-           "importance": 0.05058397954013699
-         },
-         ...
-         {
-           "feature": "year",
-           "importance": 0.0
-         }
-       ]
-     }
-     ```
+   
 
 10. **Retrieve All Existing Jobs Endpoint**
 
     - **Description**: This endpoint returns all of the existing job uuids from the database. 
 
       ```shell
-      curl localhost:5173/jobs -X GET
+      curl localhost:5173/jobs
       ```
 
     - _expected output_
@@ -454,6 +405,7 @@ While the service is up (after executing `docker-compose up`), you may curl the 
       ```shell
       {"job_id": "af7c1fe6-d669-414e-b066-e9733f0de7a8"}
       ```
+    
 13. **Retrieve Job Status Endpoint**
 
     - **Description**: This endpoint provides details about a specified job ID, facilitating users in querying the status of submitted jobs and recalling the feature intended for plotting. 
@@ -470,6 +422,7 @@ While the service is up (after executing `docker-compose up`), you may curl the 
         'graph_feature': 'gender',
       }
       ```
+    
 14. **Retrieve Graph Image from Submitted Job**
 
     - **Description**: This endpoint returns a png file download of the graphs requested from the user based on the independent variable submitted in the job request. 
