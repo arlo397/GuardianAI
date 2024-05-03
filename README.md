@@ -100,7 +100,7 @@ dc51e6ac5ae9   redis:7                         "docker-entrypoint.s…"   59 sec
 
 - Note for developers: If you make edits to any of the contaner source files (i.e, `worker.py` or `app.py`), you can redeploy the containers by simply running: `docker-compose up --build  <edited_image>` rather than executing `docker-copmpose down` followed by `docker-compose up --build -d` again.
 
-Once you have ensured that the microservice is up and running, you can access the application via `curl` commands listed below.
+Once you have ensured that the microservice is up and running, you can access the application via `curl` commands listed below locally.
 
 #### Instructions for Deploying Application on Kubernetes Cluster
 To deploy the containerized application onto the Kubernetes cluster, create the following deployments. 
