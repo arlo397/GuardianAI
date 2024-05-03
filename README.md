@@ -100,13 +100,41 @@ dc51e6ac5ae9   redis:7                         "docker-entrypoint.s…"   59 sec
 
 - Note for developers: If you make edits to any of the contaner source files (i.e, `worker.py` or `app.py`), you can redeploy the containers by simply running: `docker-compose up --build  <edited_image>` rather than executing `docker-copmpose down` followed by `docker-compose up --build -d` again.
 
-Once you have ensured that the microservice is up and running, you can access the application via `curl` commands.
+Once you have ensured that the microservice is up and running, you can access the application via `curl` commands listed below.
 
 #### Instructions for Deploying Application on Kubernetes Cluster
+To deploy the containerized application onto the Kubernetes cluster, create the following deployments. 
 
+```
+kubectl apply -f app-prod-deployment-flask.yml
+kubectl apply -f app-prod-deployment-redis.yml
+kubectl apply -f app-prod-deployment-worker.yml
+```
 
-#### Using Application on Local Hardware
+List the deployments and make sure they are all running via `kubectl get deployments`. You should also see that the pods are up and running by executing `kubectl get pods`. 
 
+Since our application utilizes databases, we need to persist the data across container starts and stops. In k8s, this is achieved via PVCs. Execute the following: 
+
+```
+# Instruct k8s to fill a volume with a PVC
+kubectl apply -f app-prod-pvc-redis.yml
+
+# Create PVC
+kubectl apply -f pvc-basic.yaml
+```
+
+k8s Services provides a way for an application running as a collection of pods on a single IP and port. To achieve this execute the following: 
+
+```
+kubectl apply -f app-prod-service-flask.yml
+kubectl apply -f app-prod-service-redis.yml
+```
+
+Afterwards, excute `kubectl get services` to view the new serice with private IP. Using the listed IP address and port, you should be able to communicate the with Flask Server. To achieve this, you must be on the k8s private network so you need to `exec` into the pod and then from the inside, execute a command as such: 
+
+```
+curl <ipaddress>:<PORT>/help
+```
 
 #### Using Application at Public Endpoint 
 Public acccess to our deployment is made possible via k8s `Service` object of type `Nodeport` which exposes our Flask API on a public port. `Ingress` specifies the subdomain to make the Flask API available on and maps this domain to the public port created. 
