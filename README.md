@@ -109,7 +109,37 @@ Once you have ensured that the microservice is up and running, you can access th
 
 
 #### Using Application at Public Endpoint 
+Public acccess to our deployment is made possible via k8s `Service` object of type `Nodeport` which exposes our Flask API on a public port. `Ingress` specifies the subdomain to make the Flask API available on and maps this domain to the public port created. 
 
+To achieve this. First create the NodePort
+```
+kubectl apply -f app-service-nodeport-flask.yml
+```
+
+Then, check that the service was created successfully and determine what port it was created for it. For example by running, `kubectl get services`
+```
+NAME                           TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)          AGE
+
+```
+
+Test that the NodePort Service is working why using the special domain: `coe332.tacc.cloud` to exercise your Flask API from the kube-access VM:
+
+```
+curl coe332.tacc.cloud:<port>/help
+```
+
+To map tht NodePort to a specific domain on the public internet, create the ingress object: 
+
+```
+kubectl apply -f app-test-ingress-flask.yaml
+```
+After that is successfully executed, you should be able to access the Flask Application on the internet, from the domain specified in the host field of the `ingress` yaml. 
+
+Try this by running the following command from any machine. 
+
+```
+curl username-flask.coe332.tacc.cloud/help
+```
 
 #### Instructions For Accessing Web App Routes & Route Output Descriptions
 
