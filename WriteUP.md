@@ -29,7 +29,7 @@ This dataset is a rich resource that fosters the development, testing, and compa
 
 The simplest way to define the goal of our microservice is to offer clients a means to query and make predictions about credit card fraud data. To achieve this, our microservice retrieves data hosted on Kaggle and presists it into a Redis Database. This data is then used as the source for analyses triggered by clients submitting HTTP requests. To achieve this, we used Flask, which is a web framework that allows developers to create web routes that eventually lead to the development of entire websites. Web routes, also known as endpoints, are the addresses we ask a server to retrieve data from. Based on the endpoint, our Flask application performs a particular task such as returning summary statitics about the credit card data. Additionally, our application allows clients to submit jobs to a queue. Through a back-end worker, jobs pushed onto the queue are popped off and executed in the order they are submitted. This allows multiple users to request jobs from the worker, and in order, the back end worker completes the task and and stores the result into a database that the client can retrieve the completed job (in this case a graph) from. 
 
-This functionailty is then all containerized in a Docker container, which is essentially packaged software that runs agnostically in any environment. Regardless of the operating system executing the application or the version of a library installed on an individual’s system, containers allow for platform-agnostic and reproducible results. So once the image of the web service is created and published onto a Docker Image Web Hosting service such as DockerHub, anyone can pull the image and run the Docker Container to run the application as intended. Lastly, we integrated Kubernetes as our container orchestrator to manage and scale our Docker containers effectively. Kubernetes, often abbreviated as K8s, is an open-source platform designed to automate deploying, scaling, and operating application containers. It abstracts away the underlying infrastructure complexities, allowing developers to focus on building and deploying their applications without worrying about the operational overhead. With Kubernetes, we define desired states for our containerized applications, such as how many instances should be running, and Kubernetes takes care of ensuring that the desired state is maintained, even in the face of failures or fluctuations in demand. Additionally, Kubernetes offers features like load balancing, service discovery, and self-healing capabilities, which further enhance the reliability and scalability of our microservice architecture. By leveraging Kubernetes as our container orchestrator, we can efficiently manage our Docker containers across a cluster of machines, ensuring high availability, fault tolerance, and seamless scaling as our application grows
+This functionailty is then all containerized in a Docker container, which is essentially packaged software that runs agnostically in any environment. Regardless of the operating system executing the application or the version of a library installed on an individual’s system, containers allow for platform-agnostic and reproducible results. So once the image of the web service is created and published onto a Docker Image Web Hosting service such as DockerHub, anyone can pull the image and run the Docker Container to run the application as intended. Lastly, we integrated Kubernetes as our container orchestrator to manage and scale our Docker containers effectively. Kubernetes automates scaling and deployment processes. With Kubernetes, we define desired states for our containerized applications, such as how many instances should be running, and Kubernetes takes care of ensuring that the desired state is maintained, even in the face of failures or fluctuations in demand. Additionally, Kubernetes offers features like load balancing, service discovery, and self-healing capabilities, which further enhance the reliability and scalability of our microservice architecture. By leveraging Kubernetes as our container orchestrator, we can efficiently manage our Docker containers across a cluster of machines, ensuring high availability, fault tolerance, and seamless scaling as our application grows
 
 ### Software Diagram
 
@@ -39,60 +39,59 @@ The following software diagram captures the primary components and workflow of o
 
 ### API Routes
 
-Our application offers the client  different routes to query the Flask Server. Once the application is running, clients may utilize curl commands to access information about the credit card data. Information about the avaliable routes are listed below and can be shown to the client at the terminal by executing: `curl http://127.0.0.1:5173/help`
+Our application offers the client  different routes to query the service. Once the application is running, clients may utilize curl commands to access information about the credit card data. Information about the avaliable routes are listed below and can be presented to the client at the terminal by executing: `curl http://127.0.0.1:5173/help`
 
 Description of all application routes:
 `/transaction_data (GET)`: Returns all transaction data currently stored in Redis.
-  Example Command: curl http://127.0.0.1:5173/transaction_data
+  Example Command: `curl http://127.0.0.1:5173/transaction_data`
 
 `/transaction_data (POST)`: Fetches transaction data from Kaggle or disk and stores it in Redis.
-  Example Command: curl -X POST localhost:5173/transaction_data
+  Example Command: `curl -X POST localhost:5173/transaction_data`
 
 `/transaction_data (DELETE)`: Deletes all transaction data stored in Redis.
-  Example Command: curl -X DELETE localhost:5173/transaction_data
+  Example Command: `curl -X DELETE localhost:5173/transaction_data`
 
 `/transaction_data_view (GET)`: Returns a default slice of the transaction data stored in Redis (first 5 entries).
-  Example Command: curl localhost:5173/transaction_data_view
+  Example Command: `curl localhost:5173/transaction_data_view`
 
 `/transaction_data_view?limit=<int>&offset=<int> (GET)`: Returns a slice of the transaction data stored in Redis.
-  Example Command: curl "localhost:5173/transaction_data_view?limit=2&offset=7"
+  Example Command: `curl "localhost:5173/transaction_data_view?limit=2&offset=7"`
 
 `/amt_analysis (GET)`: Returns statistical descriptions of the transaction amounts in the dataset.
-  Example Command: curl "localhost:5173/amt_analysis"
+  Example Command: `curl "localhost:5173/amt_analysis"`
 
 `/amt_fraud_correlation (GET)`: Returns the correlation between transaction amount and fraud status in the dataset.
-  Example Command: curl "localhost:5173/amt_fraud_correlation"
+  Example Command: `curl "localhost:5173/amt_fraud_correlation"`
 
 `/fraudulent_zipcode_info (GET)`: Returns the zipcode with the highest number of fraudulent transactions, and retrieves its geographic location.
-  Example Command: curl "localhost:5173/fraudulent_zipcode_info"
+  Example Command: `curl "localhost:5173/fraudulent_zipcode_info"`
 
 `/fraud_by_state (GET)`:  Returns the number of fraudulent transactions per state.
-  Example Command: curl "localhost:5173/fraud_by_state"
+  Example Command: `curl "localhost:5173/fraud_by_state"`
 
 `/ai_analysis (GET)`: Returns the most important features and feature importances from the trained model.
-  Example Command: curl "localhost:5173/ai_analysis"
+  Example Command: `curl "localhost:5173/ai_analysis"`
 
 `/jobs (GET)`: Returns all job ids in the database.
-  Example Command: curl "localhost:5173/jobs"
+  Example Command: `curl "localhost:5173/jobs"`
 
 `/jobs (DELETE)`: Clears all jobs from the jobs database.
-  Example Command: curl -X DELETE "localhost:5173/jobs"
+  Example Command: `curl -X DELETE "localhost:5173/jobs"`
 
 `/jobs (POST)`: Creates a job for plotting a feature specified by the user.
-  Example Command: curl -X POST localhost:5173/jobs -d "{"graph_feature": "gender"}" -H "Content-Type: application/json"
+  Example Command: `curl -X POST localhost:5173/jobs -d "{"graph_feature": "gender"}" -H "Content-Type: application/json"`
 
 `/jobs/<id> (GET)`: Returns information about the specified job id.
-  Example Command: curl -X GET "localhost:5173/jobs/99e6820f-0e4f-4b55-8052-7845ea390a44"
+  Example Command: `curl -X GET "localhost:5173/jobs/99e6820f-0e4f-4b55-8052-7845ea390a44"`
 
 `/results/<id>`:  Returns the job result as a image file download.
-  Example Command: curl -X GET "localhost:5173/results/99e6820f-0e4f-4b55-8052-7845ea390a44"
-
+  Example Command: `curl -X GET "localhost:5173/results/99e6820f-0e4f-4b55-8052-7845ea390a44"`
 
 For example, for the user to extract data from Kaggle and presist it into the Redis Database, the following `curl` is executed.
 
 -  `curl -X POST localhost:5173/data`
 
-Once the data is posted to the database, the client can query other endpoints that require the data to be avalaible. For example, the command, `curl localhost:5173/transaction_data_view` provides a quick look at the dataset by returning the first five entries. If the user wishes to see n records offset by some number, they may specify a limit and offset query parameter, otherwise, the first five entries are returned via: `curl localhost:5173/transaction_data_view`. This will return:
+Once the data is posted to the database, the client can query other endpoints (listed above) that require the data to be avaliable. For example, the command, `curl localhost:5173/transaction_data_view` provides a quick look at the dataset by returning the first five entries. If the user wishes to see n records offset by some number, they may specify a limit and offset query parameter, otherwise, the first five entries are returned via: `curl localhost:5173/transaction_data_view`. This will return:
 
 ```shell
       [
@@ -146,174 +145,25 @@ Once the data is posted to the database, the client can query other endpoints th
        }
      ]
 ```
-TODO - DISCUSS MORE ROUTES HERE. ML for example
 
-An aspect of our application is providing clients with the ability to submit jobs. In this context, a job is a long running task that the client requests. Requets are processed via a queue, so the backend of our application serves teh clients one at a time. 
-**Generate Graph for Feature Endpoint**
+Addtionallu, an aspect of our application is providing clients with the ability to submit jobs. In this context, a job is a long running task that the client requests. Requets are processed via a queue, so the backend of our application serves teh clients one at a time. 
 
-    - **Description**: This endpoint initializes a job based on the user's input in JSON format, specifically their graph feature preferences. The job is then queued for processing, allowing the worker to generate a PNG plot. Once generated, the plot can be downloaded and viewed by the user. 
-    
-      Based on what information the user desires to analyze, they may submit one of the following graph features which will be utilized as the independent variable of the generated graph. If the user fails to submit a feature from the feature options listed below or submits the `curl` command incorrectly, a respective error message with intructions to correct the `POST` request will be generated. 
-    
-      Feature Options for Graphing: ['trans_month','trans_dayOfWeek','gender','category']
-    
-      ```shell
-      curl -X POST localhost:5173/jobs -d '{"graph_feature": "gender"}' -H "Content-Type: application/json"
-      ```
-    
-    - _expected output_
-    
-      ```shell
-
-    ```shell
-      {"job_id": "af7c1fe6-d669-414e-b066-e9733f0de7a8"}
-    ```
-
-**Retrieve Job Status Endpoint**
-
-    - **Description**: This endpoint provides details about a specified job ID, facilitating users in querying the status of submitted jobs and recalling the feature intended for plotting. 
-
-      ```shell
-      curl http://127.0.0.1:5173/jobs/ af7c1fe6-d669-414e-b066-e9733f0de7a8
-      ```
-
-    - _expected output_
-
-      ```shell
-      {
-        'status': 'queued',
-        'graph_feature': 'gender',
-      }
-      ```
-
-**Retrieve Graph Image from Submitted Job**
-
-    - **Description**: This endpoint returns a png file download of the graphs requested from the user based on the independent variable submitted in the job request. 
-    
-      ```shell
-      curl http://127.0.0.1:5173/results/af7c1fe6-d669-414e-b066-e9733f0de7a8
-      ```
-    
-    - *expected output*
-    
-      <img src="/img/trans_month.png" alt="Alt text"  />
-    
-      <img src="/img/trans_week.png" alt="Alt text"  />
-    
-      <img src="/img/trans_category.png" alt="Alt text"  />
-    
-      <img src="/img/gender.png" alt="Alt text"  />
+TODO: ADD NEW ML ROUTES EXAMPLES HERE!
 
 
-**Informational Help Endpoint**
+One particular job type is graphing features of the data. The client has the following list of independent variables they may choose from the have the `worker` generate a graph for them: ['trans_month','trans_dayOfWeek','gender','category']
+    
+Executing the following shell command will store a graph in the results database. 
+```shell
+      curl -X POST localhost:5173/jobs -d '{"trans_category": "gender"}' -H "Content-Type: application/json"
+```
 
-    - **Description**: This endpoint returns a description of all of the routes as well as an example curl command.  
+To retrieve the plot from the database, execute the following command and view the figure below: 
+```shell
+      curl -X GET localhost:5173/results/<id> 
+```
 
-    ```
-    
-      ```shell
-      curl http://127.0.0.1:5173/help
-    ```
-
-      ```
-    
-    - _expected output_
-
-    ```
-      Description of all application routes:
-      /transaction_data (GET): Returns all transaction data currently stored in Redis.
-        Example Command: curl http://127.0.0.1:5173/transaction_data
-    
-      /transaction_data (POST): Fetches transaction data from Kaggle or disk and stores it in Redis.
-        Example Command: curl -X POST localhost:5173/transaction_data
-    
-      /transaction_data (DELETE): Deletes all transaction data stored in Redis.
-        Example Command: curl -X DELETE localhost:5173/transaction_data
-    
-      /transaction_data_view: Returns a default slice of the transaction data stored in Redis (first 5 entries).
-        Example Command: curl localhost:5173/transaction_data_view
-    
-      /transaction_data_view?limit=<int>&offset=<int>: Returns a slice of the transaction data stored in Redis.
-        Example Command: curl "localhost:5173/transaction_data_view?limit=2&offset=7"
-    
-      /amt_analysis: Returns statistical descriptions of the transaction amounts in the dataset.
-        Example Command: curl "localhost:5173/amt_analysis"
-    
-      /amt_fraud_correlation: Returns the correlation between transaction amount and fraud status in the dataset.
-        Example Command: curl "localhost:5173/amt_fraud_correlation"
-    
-      /fraudulent_zipcode_info: Returns the zipcode with the highest number of fraudulent transactions, and retrieves its geographic location.
-        Example Command: curl "localhost:5173/fraudulent_zipcode_info"
-    
-      /fraud_by_state:  Returns the number of fraudulent transactions per state.
-        Example Command: curl "localhost:5173/fraud_by_state"
-    
-      /ai_analysis: Returns the most important features and feature importances from the trained model.
-        Example Command: curl "localhost:5173/ai_analysis"
-    
-      /jobs (GET): Returns all job ids in the database.
-        Example Command: curl "localhost:5173/jobs"
-    
-      /jobs (DELETE): Clears all jobs from the jobs database.
-        Example Command: curl -X DELETE "localhost:5173/jobs"
-    
-      /jobs (POST): Creates a job for plotting a feature specified by the user.
-        Example Command: curl -X POST localhost:5173/jobs -d "{"graph_feature": "gender"}" -H "Content-Type: application/json"
-    
-      /jobs/<id>: Returns information about the specified job id.
-        Example Command: curl -X DELETE "localhost:5173/jobs/99e6820f-0e4f-4b55-8052-7845ea390a44"
-    
-      /results/<id>:  Returns the job result as a image file download.
-        Example Command: curl -X DELETE "localhost:5173/results/99e6820f-0e4f-4b55-8052-7845ea390a44"
-    ```
-    
-      ```shell
-        Description of all application routes:
-        /transaction_data (GET): Returns all transaction data currently stored in Redis.
-          Example Command: curl http://127.0.0.1:5173/transaction_data
-      
-        /transaction_data (POST): Fetches transaction data from Kaggle or disk and stores it in Redis.
-          Example Command: curl -X POST localhost:5173/transaction_data
-      
-        /transaction_data (DELETE): Deletes all transaction data stored in Redis.
-          Example Command: curl -X DELETE localhost:5173/transaction_data
-      
-        /transaction_data_view: Returns a default slice of the transaction data stored in Redis (first 5 entries).
-          Example Command: curl localhost:5173/transaction_data_view
-      
-        /transaction_data_view?limit=<int>&offset=<int>: Returns a slice of the transaction data stored in Redis.
-          Example Command: curl "localhost:5173/transaction_data_view?limit=2&offset=7"
-      
-        /amt_analysis: Returns statistical descriptions of the transaction amounts in the dataset.
-          Example Command: curl "localhost:5173/amt_analysis"
-      
-        /amt_fraud_correlation: Returns the correlation between transaction amount and fraud status in the dataset.
-          Example Command: curl "localhost:5173/amt_fraud_correlation"
-      
-        /fraudulent_zipcode_info: Returns the zipcode with the highest number of fraudulent transactions, and retrieves its geographic location.
-          Example Command: curl "localhost:5173/fraudulent_zipcode_info"
-      
-        /fraud_by_state:  Returns the number of fraudulent transactions per state.
-          Example Command: curl "localhost:5173/fraud_by_state"
-      
-        /ai_analysis: Returns the most important features and feature importances from the trained model.
-          Example Command: curl "localhost:5173/ai_analysis"
-      
-        /jobs (GET): Returns all job ids in the database.
-          Example Command: curl "localhost:5173/jobs"
-      
-        /jobs (DELETE): Clears all jobs from the jobs database.
-          Example Command: curl -X DELETE "localhost:5173/jobs"
-      
-        /jobs (POST): Creates a job for plotting a feature specified by the user.
-          Example Command: curl -X POST localhost:5173/jobs -d "{"graph_feature": "gender"}" -H "Content-Type: application/json"
-      
-        /jobs/<id>: Returns information about the specified job id.
-          Example Command: curl -X DELETE "localhost:5173/jobs/99e6820f-0e4f-4b55-8052-7845ea390a44"
-      
-        /results/<id>:  Returns the job result as a image file download.
-          Example Command: curl -X DELETE "localhost:5173/results/99e6820f-0e4f-4b55-8052-7845ea390a44"
-      ```
+<img src="/img/trans_category.png" alt="Alt text"/>
 
 ### Ethical and Professional Responsibilities
 

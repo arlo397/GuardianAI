@@ -51,14 +51,12 @@ The following software diagram captures the primary components and workflow of o
       '{"graph_feature": "gender"}' -H "Content-Type: application/json"
   - [DELETE] `/jobs`: Deletes all jobs
   - [GET] `/results/<jobid>`: Return requested job result in the form of a JSON dictionary. If the job has not yet been finished, the api returns a message indicating so.
-- `src/jobs.py`: Initializes databases and provides the functionality to create/submit/put jobs on the queue.
 - `src/worker.py`: Pull jobs off of the queue and executes job functionality.
 - `src/ML_model.py`: Implements a Random-Forest Classifier to detect fraud with a high accuracy of 99%, leveraging feature importance analysis to enhance predictive insights.
 - `requirements.txt`: Text file that lists all of the Python non-standard libraries used to develop the code.
 - `data/`: Local Directory for Redis container to presist data to file system across container executions.
-- `test/test_api.py`: Tests functionality in `src/api.py`
-- `test/test_jobs.py`: Tests functionailty in `src/jobs.py`
-- `test/test_worker.py`: Tests functionailty in `src/worker.py`
+- `src/test_api.py`: Tests functionality in `src/api.py`
+- `src/test_worker.py`: Tests functionailty in `src/worker.py`
 
 Note: All throughout the code source, strategic logging is implemented to alert the developer of important events and bugs that arise. Logs are stored in `logger.log`
 
