@@ -147,10 +147,7 @@ Once the data is posted to the database, the client can query other endpoints (l
      ]
 ```
 
-Addtionallu, an aspect of our application is providing clients with the ability to submit jobs. In this context, a job is a long running task that the client requests. Requets are processed via a queue, so the backend of our application serves teh clients one at a time. 
-
-TODO: ADD NEW ML ROUTES EXAMPLES HERE!
-
+Additionally, an aspect of our application is providing clients with the ability to submit jobs. In this context, a job is a long-running task that the client requests. Requests are processed via a queue, so the backend of our application serves the clients one at a time.
 
 One particular job type is graphing features of the data. The client has the following list of independent variables they may choose from the have the `worker` generate a graph for them: ['trans_month','trans_dayOfWeek','gender','category']
     
@@ -165,6 +162,8 @@ To retrieve the plot from the database, execute the following command and view t
 ```
 
 <img src="/img/trans_category.png" alt="Alt text"/>
+
+Additionally, our application supports making inferences on credit card transactions. We developed and trained a Machine Learning Model that predicts whether a transaction is fraudulent, so our worker accepts a transaction JSON object array and returns either a 1 for Fraudulent or a 0 for Not Fraudulent.
 
 ### Ethical and Professional Responsibilities
 
