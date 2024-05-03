@@ -42,50 +42,51 @@ The following software diagram captures the primary components and workflow of o
 Our application offers the client  different routes to query the service. Once the application is running, clients may utilize curl commands to access information about the credit card data. Information about the avaliable routes are listed below and can be presented to the client at the terminal by executing: `curl http://127.0.0.1:5173/help`
 
 Description of all application routes:
+
 `/transaction_data (GET)`: Returns all transaction data currently stored in Redis.
-  Example Command: `curl http://127.0.0.1:5173/transaction_data`
+  - Example Command: `curl http://127.0.0.1:5173/transaction_data`
 
 `/transaction_data (POST)`: Fetches transaction data from Kaggle or disk and stores it in Redis.
-  Example Command: `curl -X POST localhost:5173/transaction_data`
+  - Example Command: `curl -X POST localhost:5173/transaction_data`
 
 `/transaction_data (DELETE)`: Deletes all transaction data stored in Redis.
-  Example Command: `curl -X DELETE localhost:5173/transaction_data`
+  - Example Command: `curl -X DELETE localhost:5173/transaction_data`
 
 `/transaction_data_view (GET)`: Returns a default slice of the transaction data stored in Redis (first 5 entries).
-  Example Command: `curl localhost:5173/transaction_data_view`
+  - Example Command: `curl localhost:5173/transaction_data_view`
 
 `/transaction_data_view?limit=<int>&offset=<int> (GET)`: Returns a slice of the transaction data stored in Redis.
-  Example Command: `curl "localhost:5173/transaction_data_view?limit=2&offset=7"`
+  - Example Command: `curl "localhost:5173/transaction_data_view?limit=2&offset=7"`
 
 `/amt_analysis (GET)`: Returns statistical descriptions of the transaction amounts in the dataset.
-  Example Command: `curl "localhost:5173/amt_analysis"`
+  - Example Command: `curl "localhost:5173/amt_analysis"`
 
 `/amt_fraud_correlation (GET)`: Returns the correlation between transaction amount and fraud status in the dataset.
-  Example Command: `curl "localhost:5173/amt_fraud_correlation"`
+  - Example Command: `curl "localhost:5173/amt_fraud_correlation"`
 
 `/fraudulent_zipcode_info (GET)`: Returns the zipcode with the highest number of fraudulent transactions, and retrieves its geographic location.
-  Example Command: `curl "localhost:5173/fraudulent_zipcode_info"`
+  - Example Command: `curl "localhost:5173/fraudulent_zipcode_info"`
 
 `/fraud_by_state (GET)`:  Returns the number of fraudulent transactions per state.
-  Example Command: `curl "localhost:5173/fraud_by_state"`
+  - Example Command: `curl "localhost:5173/fraud_by_state"`
 
 `/ai_analysis (GET)`: Returns the most important features and feature importances from the trained model.
-  Example Command: `curl "localhost:5173/ai_analysis"`
+  - Example Command: `curl "localhost:5173/ai_analysis"`
 
 `/jobs (GET)`: Returns all job ids in the database.
-  Example Command: `curl "localhost:5173/jobs"`
+  - Example Command: `curl "localhost:5173/jobs"`
 
 `/jobs (DELETE)`: Clears all jobs from the jobs database.
-  Example Command: `curl -X DELETE "localhost:5173/jobs"`
+  - Example Command: `curl -X DELETE "localhost:5173/jobs"`
 
 `/jobs (POST)`: Creates a job for plotting a feature specified by the user.
-  Example Command: `curl -X POST localhost:5173/jobs -d "{"graph_feature": "gender"}" -H "Content-Type: application/json"`
+  - Example Command: `curl -X POST localhost:5173/jobs -d "{"graph_feature": "gender"}" -H "Content-Type: application/json"`
 
 `/jobs/<id> (GET)`: Returns information about the specified job id.
-  Example Command: `curl -X GET "localhost:5173/jobs/99e6820f-0e4f-4b55-8052-7845ea390a44"`
+  - Example Command: `curl -X GET "localhost:5173/jobs/99e6820f-0e4f-4b55-8052-7845ea390a44"`
 
 `/results/<id>`:  Returns the job result as a image file download.
-  Example Command: `curl -X GET "localhost:5173/results/99e6820f-0e4f-4b55-8052-7845ea390a44"`
+  - Example Command: `curl -X GET "localhost:5173/results/99e6820f-0e4f-4b55-8052-7845ea390a44"`
 
 For example, for the user to extract data from Kaggle and presist it into the Redis Database, the following `curl` is executed.
 
