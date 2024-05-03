@@ -17,12 +17,12 @@ spec:
     spec:
       containers:
         - name: redis
-          image: ubuntu:22.04
+          image: redis
           command: []
           volumeMounts:
-          - name: redis-<username>-data
+          - name: redis-rif252-data
             mountPath: "/data"
       volumes:
-      - name: redis-<username>-data
+      - name: redis-rif252-data
         persistentVolumeClaim:
-          claimName: redis-<username>-data
+          claimName: redis-rif252-data

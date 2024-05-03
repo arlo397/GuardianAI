@@ -1,10 +1,7 @@
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: flask-deployment-test
-  labels:
-    app: flask-api
 spec:
   replicas: 1
   selector:
@@ -16,10 +13,14 @@ spec:
         app: flask-api
     spec:
       containers:
-        - name: flask-api
-        - imagePullPolicy: Always
-          image: username/image-name:tag
-          ports:
-          - name: http
-          - containerPort: 5713
-          command: ["python3 api.py"]
+      - name: flask-api
+        image: arlo397/flask_api:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5000
+        env:
+        - name: LOG_LEVEL
+          value: "DEBUG"
+        - name: REDIS_IP
+          value: "redis-service-test"
+        command: ["python", "api.py"]
