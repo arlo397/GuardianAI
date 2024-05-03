@@ -1,14 +1,9 @@
 import pandas as pd
-import numpy as np
-import seaborn as sns
 import category_encoders as ce
 from sklearn.model_selection import train_test_split
-from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import roc_auc_score
 from sklearn.metrics import accuracy_score
 import joblib
-
 
 def save_model(model, filename):
     """
@@ -32,7 +27,6 @@ def load_model(filename):
         RandomForestClassifier: The loaded model.
     """
     return joblib.load(filename)
-
 
 def train_model() -> RandomForestClassifier:
     """
