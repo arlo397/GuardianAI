@@ -62,6 +62,16 @@ def _begin_job(job_id) -> dict[str, Any]:
     return job_info
 
 def _execute_graph_feature_analysis_job(job_id: str, job_description_dict: dict[str, str]) -> bool:
+    """
+    Attempts to perform mathematical analysis requested in the job description.
+    The result is an image plot saved as a binary string in Redis.
+    
+    Arguments:
+        job_id (str): The ID of the job
+        job_description_dict (dict[str, str]): The job information
+    Returns:
+        result (bool): Whether or not the job was completed successfully
+    """
     labels=['Legitimate', 'Fraudulent']
     independent_variable = job_description_dict["graph_feature"]
     
@@ -142,10 +152,36 @@ def _execute_graph_feature_analysis_job(job_id: str, job_description_dict: dict[
     return True
 
 def _extract_row(t: dict[str, Any]) -> list[str|float|int]:
+    """
+    Converts a transaction dictionary from a transaction analysis job input to a row of values.
+    This is the first step in preparing a tensor for model inference.
+    The date is broken into more meaningful numeric components.
+
+    Arguments:
+        t (dict[str, Any]): The transaction dictionary
+    Returns:
+        result (list[str|float|int]): The transaction dictionary as a list of values
+    """
     date = datetime.strptime(t['trans_date_trans_time'], '%d/%m/%Y %H:%M')
     return [date.day, date.month, date.year, date.weekday(), date.hour, date.minute, t['merchant'], t['category'], t['amt'], t['lat'], t['long'], t['job'], t['merch_lat'], t['merch_long']]
 
 def _standardize_tensor(tensor: torch.Tensor) -> torch.Tensor:
+    """
+    This is the last step in preparing a tensor for model inference.
+    This loads the mean and standard deviation tensors (obtained from training data)
+    from saved files and then standardizes the input tensor with them.
+
+    This function requires a 'meanandstd.txt' file to be present in the
+    current working directory with the first line being the mean tensor values
+    and the second line being the std tensor values, e.g.
+    1.0, 2.0, 3.0
+    0.1, 0.2, 0.3
+
+    Arguments:
+        tensor (torch.Tensor): The tensor to standardize
+    Returns:
+        result (torch.Tensor): The standardized tensor
+    """
     with open('meanandstd.txt', 'r') as meanandstd_file:
         lines = [line.strip().split(', ') for line in meanandstd_file.readlines()[:2]]
     mean = torch.tensor([float(m) for m in lines[0]], dtype=torch.float)
@@ -153,6 +189,17 @@ def _standardize_tensor(tensor: torch.Tensor) -> torch.Tensor:
     return (tensor - mean) / (std + 1e-8)
 
 def _execute_transaction_analysis_job(job_id: str, job_info: dict[str, Any]) -> bool:
+    """
+    Attempts to perform model inference requested in the job description.
+    The result is a list of classifications (either zeros to indicate legitimate
+    transactions or ones to indicate fraudulent ones).
+    
+    Arguments:
+        job_id (str): The ID of the job
+        job_info (dict[str, Any]): The job information
+    Returns:
+        result (bool): Whether or not the job was completed successfully
+    """
     try:
         if isinstance(job_info['transactions'], list) and job_info['transactions']:
             err = validate_transaction_list(job_info)
