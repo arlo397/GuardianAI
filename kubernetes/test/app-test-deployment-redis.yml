@@ -17,4 +17,7 @@ spec:
     spec:
       containers:
         - name: redis
-          image: ubuntu:22.04
+          image: redis:7
+          ports:
+          - name: http
+            containerPort: 6379

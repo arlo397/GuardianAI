@@ -17,5 +17,6 @@ spec:
     spec:
       containers:
         - name: worker
-          image: ubuntu:22.04
+          imagePullPolicty: Always
+          image: username/image-name:tag
           command: ["python worker.py"]

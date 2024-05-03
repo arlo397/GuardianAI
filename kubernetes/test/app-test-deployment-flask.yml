@@ -17,5 +17,9 @@ spec:
     spec:
       containers:
         - name: flask-api
-          image: ubuntu:22.04
-          command: ["python api.py"]
+        - imagePullPolicy: Always
+          image: username/image-name:tag
+          ports:
+          - name: http
+          - containerPort: 5713
+          command: ["python3 api.py"]
