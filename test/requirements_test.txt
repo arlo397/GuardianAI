@@ -1,0 +1,11 @@
+flask
+hotqueue
+kaggle
+matplotlib
+orjson
+pandas
+pytest
+redis
+requests
+seaborn
+urllib3

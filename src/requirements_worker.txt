@@ -1,9 +1,7 @@
-flask
 hotqueue
 matplotlib
 orjson
 pandas
-pytest
 requests
 redis
 seaborn

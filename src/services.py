@@ -10,10 +10,12 @@ from typing import Any, Callable, Optional
 _redis: Optional[Redis] = None
 _queue: Optional[HotQueue] = None
 
+BING_API_KEY_VAR = 'BING_API_KEY'
 LOG_LVL_VAR = 'LOG_LEVEL'
 REDIS_IP_VAR = 'REDIS_IP'
 REDIS_JOB_QUEUE_KEY = 'job_queue'
 REDIS_JOB_IDS_KEY = 'job_ids'
+TRANSACTION_DATE_TIME_FORMAT = '%d/%m/%Y %H:%M'
 
 OK_200 = ('OK\n', 200)
 
@@ -88,12 +90,25 @@ def get_log_level() -> str:
   Throws an Exception if the log level is not found in the environment.
 
   Returns:
-    log_lvl (str): The log level from the environment
+    log_lvl (str): The log level from the environment.
   """
   log_lvl = environ.get(LOG_LVL_VAR)
   if log_lvl in logging._levelToName.values():
     return log_lvl
-  raise Exception('LOG_LVL not defined in environment variables.')
+  raise Exception(f'{LOG_LVL_VAR} invalid or not defined in environment variables.')
+
+def get_bing_api_key() -> str:
+  """
+  Retrieves the Bing API key from the environment using BING_API_KEY_VAR.
+  Throws an Exception if the bing API key is not found in the environment.
+
+  Returns:
+    bing_api_key (str): The Bing API key from the environment.
+  """
+  bing_api_key = environ.get(BING_API_KEY_VAR)
+  if bing_api_key is not None:
+    return bing_api_key
+  raise Exception(f'{BING_API_KEY_VAR} not defined in environment variables.')
 
 def pipeline_data_out_of_redis(redisdb: Redis) -> list[dict[str, Any]]:
   """

@@ -1,3 +1,4 @@
+from datetime import datetime
 from flask import Flask, send_file, abort, request
 from hotqueue import HotQueue
 from io import BytesIO
@@ -7,15 +8,14 @@ from os import environ
 import pandas as pd
 from redis import Redis
 import requests
-from services import OK_200, PLOTTING_DATA_COLS, REDIS_JOB_IDS_KEY, RedisDb, get_log_level, init_backend_services, \
+from services import OK_200, PLOTTING_DATA_COLS, REDIS_JOB_IDS_KEY, TRANSACTION_DATE_TIME_FORMAT, RedisDb, get_bing_api_key, get_log_level, init_backend_services, \
       get_queue as generic_get_queue, get_redis as generic_get_redis, pipeline_data_out_of_redis
 import socket
 from typing import Any, Optional
 import urllib3
 from uuid import uuid4
+from werkzeug.exceptions import HTTPException
 import zipfile
-
-BING_API_KEY = "AoaZqu_awoToijquulNRBaNbW98dniWa17O-QGrlBxP6Nv60C-3YaMIDkLqNb5UL"
 
 app = Flask(__name__)
 
@@ -222,6 +222,39 @@ def get_transaction_data_view() -> list[dict[str, Any]]:
     return [orjson.loads(get_redis(RedisDb.TRANSACTION_DB).get(trans_id)) for trans_id in range(offset, offset + limit)]
 
 
+class AnalysisManager:
+    """
+    This class provides streamlining for loading and assembling required DataFrames for data analysis.
+    It may call the Flask abort function and is expected to be used within Flask context.
+    """
+    def __init__(self, required_cols: list[str]):
+        """
+        Args:
+            required_cols (list[str]): The list of columns that are required in the DataFrame. All other cols will be dropped for memory optimization.
+        """
+        self.required_cols = required_cols
+
+    def __enter__(self):
+        data = get_transaction_data_from_redis()
+        if not data:
+            abort(400, 'Data must be loaded into Redis before analysis can be performed.')
+        df = pd.DataFrame(data)
+        df = df.drop(columns=df.columns.difference(self.required_cols), axis=1)
+        for col in self.required_cols:
+            if col not in df.columns:
+                logging.error(f'Required column {col} is missing from the DataFrame.')
+                abort(500, f'Required column {col} is missing from the dataset.')
+        return df
+
+    def __exit__(self, exception_type, exception_value, _):
+        if exception_type is HTTPException:
+            return False
+        if exception_type is not None:
+            logging.error(f'Error computing statistics: {exception_value}')
+            abort(500, 'Error computing statistics.')
+        return True
+
+
 # curl localhost:5173/amt_analysis
 @app.route('/amt_analysis')
 def amt_analysis() -> dict[str, float]:
@@ -234,17 +267,8 @@ def amt_analysis() -> dict[str, float]:
         result (dict[str, float]): A dict containing statistical summaries of the 'amt' field
         in the dataset, including count, mean, std, min, 25%, 50%, 75%, and max.
     """
-    data = get_transaction_data_from_redis()
-    if not data:
-        abort(400, 'Data must be loaded into Redis before analysis can be performed.')
-    try:
-        df = pd.DataFrame(data)
-        amt_stats = df['amt'].describe()
-        stats_dict = amt_stats.to_dict()
-        return stats_dict
-    except Exception as e:
-        logging.error(f'Error computing statistics: {e}')
-        abort(500, 'Error computing statistics.')
+    with AnalysisManager(['amt']) as df:
+        return df['amt'].describe().to_dict()
 
 
 # curl localhost:5173/amt_fraud_correlation
@@ -256,19 +280,8 @@ def compute_correlation() -> dict[str, dict[str, float]]:
     Returns:
         result (dict[str, dict[str, float]]) A dict containing the correlation matrix between 'amt' and 'is_fraud'.
     """
-    data = get_transaction_data_from_redis()
-    if not data:
-        abort(400, 'Data must be loaded into Redis before analysis can be performed.')
-    try:
-        df = pd.DataFrame(data)
-        if 'amt' not in df.columns or 'is_fraud' not in df.columns:
-            logging.error('Required columns are missing.')
-            abort(500, 'Required columns are missing from the dataset.')
-        correlation = df[['amt', 'is_fraud']].corr()
-        return correlation.to_dict()
-    except Exception as e:
-        logging.error(f'Error computing correlation: {e}')
-        abort(500, 'Error computing correlation.')
+    with AnalysisManager(['amt', 'is_fraud']) as df:
+        return df.corr().to_dict()
 
 
 # curl localhost:5173/fraudulent_zipcode_info
@@ -280,39 +293,46 @@ def fraudulent_zipcode_info() -> dict[str, str | float]:
     Returns:
         result (dict[str, str|float]): A dict containing the most fraudulent zipcode, the number of frauds, and a Google Maps link to the location.
     """
-    data = get_transaction_data_from_redis()
-    if not data:
-        abort(400, 'Data must be loaded into Redis before analysis can be performed.')
     try:
-        df = pd.DataFrame(data)
+        bing_api_key = get_bing_api_key()
+    except Exception as e:
+        logging.error(f'Error fetching bing api key: {e}')
+        abort(500, 'Error fetching bing api key.')
+
+    with AnalysisManager(['is_fraud', 'zip']) as df:
         fraud_transactions = df[df['is_fraud'] == 1]
         fraudulent_zipcode_counts = fraud_transactions['zip'].astype(str).value_counts()
-
         most_fraudulent_zipcode = fraudulent_zipcode_counts.idxmax()
         max_fraud_count = fraudulent_zipcode_counts.max()
 
+    try:
         response = requests.get(
             f'http://dev.virtualearth.net/REST/v1/Locations/US/{most_fraudulent_zipcode}',
-            params={'key': BING_API_KEY}
+            params={'key': bing_api_key}
         )
-        if response.status_code == 200 and response.json() is not None and response.json()['resourceSets'][0][
-            'resources']:
-            location_data = data['resourceSets'][0]['resources'][0]
-            lat, lon = location_data['point']['coordinates']
-            google_maps_link = f'https://www.google.com/maps/search/?api=1&query={lat},{lon}'
-
-            return {
-                'most_fraudulent_zipcode': most_fraudulent_zipcode,
-                'fraud_count': max_fraud_count,
-                'latitude': lat,
-                'longitude': lon,
-                'Google Maps Link': google_maps_link
-            }
-        else:
-            abort(500, 'Location not found for the most fraudulent zipcode.')
     except Exception as e:
-        logging.error(f'Error omputing statistics or fetching location: {e}')
-        abort(500, 'Error computing statistics or fetching location.')
+        logging.error(f'Error fetching location: {e}')
+        abort(500, 'Error fetching location.')
+
+    try:
+        assert response.status_code == 200
+        assert response.json() is not None
+        lat, lon = response.json()['resourceSets'][0]['resources'][0]['point']['coordinates']
+        assert isinstance(lat, float)
+        assert isinstance(lon, float)
+        assert -90 <= lat <= 90
+        assert -180 <= lon <= 180
+    except Exception as e:
+        logging.error(f'Unable to parse virtualearth response {e}')
+        abort(500, 'Error parsing virtualearth response.')
+
+    return {
+        'most_fraudulent_zipcode': most_fraudulent_zipcode,
+        'fraud_count': max_fraud_count,
+        'latitude': lat,
+        'longitude': lon,
+        'Google Maps Link': f'https://www.google.com/maps/search/?api=1&query={lat},{lon}'
+    }
 
 
 # curl localhost:5173/fraud_by_state
@@ -324,57 +344,8 @@ def fraud_by_state() -> dict[str, int]:
     Returns:
         result (dict[str, int]): A dict containing the count of fraudulent transactions by state.
     """
-    data = get_transaction_data_from_redis()
-    if not data:
-        abort(400, 'Data must be loaded into Redis before analysis can be performed.')
-    try:
-        df = pd.DataFrame(data)
-        # Check if required columns are present
-        if 'state' not in df.columns or 'is_fraud' not in df.columns:
-            logging.error('Required columns are missing.')
-            abort(500, 'Required columns are missing from the dataset.')
-
-        # Filter fraudulent transactions and count by state
-        fraud_transactions = df[df['is_fraud'] == 1]
-        fraud_counts_by_state = fraud_transactions['state'].value_counts().to_dict()
-
-        return fraud_counts_by_state
-
-    except Exception as e:
-        logging.error(f'Error processing data: {e}')
-        abort(500, 'Error processing data.')
-
-
-# curl localhost:5173/ai_analysis
-@app.route('/ai_analysis')
-def ai_analysis() -> dict:
-    """
-    Endpoint for analyzing the feature importance of a trained model.
-    This function calls the train_model function to get the trained model
-    and its feature importances, then returns those importances in a JSON format.
-
-    Returns:
-        Flask Response: JSON formatted string of feature importances sorted by their importance.
-        If there's an error during processing, an internal server error is raised.
-    """
-    try:
-        # Import the function to train the model and get feature importances
-        from ML_model import train_model
-
-        # Train the model and retrieve feature importances
-        feature_importances = train_model()
-
-        # Convert the DataFrame of feature importances to JSON format
-        # Ensure the DataFrame is returned as a JSON response by using 'records' orientation
-        return feature_importances.to_dict(orient='records')
-
-    except Exception as e:
-        # Log any errors encountered during the process
-        logging.error(f'Error processing data: {e}')
-
-        # Abort the request and return an HTTP 500 Internal Server Error response
-        # The description provides more context about the error
-        abort(500, 'Error processing data.')
+    with AnalysisManager(['state', 'is_fraud']) as df:
+        return df[df['is_fraud'] == 1]['state'].value_counts().to_dict()
 
 
 # curl localhost:5173/jobs
@@ -403,6 +374,12 @@ def clear_all_jobs() -> tuple[str, int]:
     if get_redis(RedisDb.JOB_DB).flushdb(): return OK_200
     abort(500, 'Error flushing jobs db.')
 
+def _is_valid_date(date_string: str):
+    try:
+        datetime.strptime(date_string, TRANSACTION_DATE_TIME_FORMAT)
+        return True
+    except ValueError:
+        return False
 
 # curl -X POST localhost:5173/jobs -d '{"graph_feature": "gender"}' -H "Content-Type: application/json"
 # curl -X POST localhost:5173/jobs -d '{"graph_feature": "trans_month"}' -H "Content-Type: application/json"
@@ -422,18 +399,48 @@ def post_job() -> dict[str, str]:
     client_submitted_data = request.get_json(silent=True)
     if client_submitted_data:
         if isinstance(client_submitted_data, dict) and len(
-                client_submitted_data) == 1 and 'graph_feature' in client_submitted_data:
-            if client_submitted_data['graph_feature'] in PLOTTING_DATA_COLS:
-                job_id = str(uuid4())
-                get_redis(RedisDb.JOB_DB).set(job_id, orjson.dumps({
-                    'status': 'queued',
-                    'graph_feature': client_submitted_data['graph_feature'],
-                }))
-                get_redis(RedisDb.JOB_DB).rpush(REDIS_JOB_IDS_KEY, job_id)
-                get_queue().put(job_id)
-                return {'job_id': job_id}
-            abort(400, f'JSON param "graph_feature" must be included in {PLOTTING_DATA_COLS}')
-        abort(400, 'JSON data params must be an object with a single key: "graph_feature".')
+                client_submitted_data) == 1:
+            if 'graph_feature' in client_submitted_data:
+                if client_submitted_data['graph_feature'] in PLOTTING_DATA_COLS:
+                    job_id = str(uuid4())
+                    get_redis(RedisDb.JOB_DB).set(job_id, orjson.dumps({
+                        'status': 'queued',
+                        'graph_feature': client_submitted_data['graph_feature'],
+                    }))
+                    get_redis(RedisDb.JOB_DB).rpush(REDIS_JOB_IDS_KEY, job_id)
+                    get_queue().put(job_id)
+                    return {'job_id': job_id}
+                abort(400, f'JSON param "graph_feature" must be included in {PLOTTING_DATA_COLS}')
+            elif 'transactions' in client_submitted_data:
+                if isinstance(client_submitted_data['transactions'], list) and client_submitted_data['transactions']:
+                    required_keys_and_types = {
+                        'trans_date_trans_time': str,
+                        'merchant': str,
+                        'category': str,
+                        'amt': float,
+                        'lat': float,
+                        'long': float,
+                        'job': str,
+                        'merch_lat': float,
+                        'merch_long': float,
+                    }
+                    for t in client_submitted_data['transactions']:
+                        if not isinstance(t, dict): abort(400, 'JSON param "transactions" must be a list of objects.')
+                        for k, v in required_keys_and_types.items():
+                            if k not in t: abort(400, f'JSON param "transactions" has object missing key {k}.')
+                            if not isinstance(t[k], v): abort(400, f'JSON param "transactions" has object with key {k} of incorrect type. (Should be {v}).')
+                        if len(t) > len(required_keys_and_types): abort(400, 'JSON param "transactions" has an object with too many keys.')
+                        if not _is_valid_date(t['trans_date_trans_time']): abort(400, f'JSON param "transactions" has an object with trans_date_trans_time in invalid format. (Should be {TRANSACTION_DATE_TIME_FORMAT}.)')
+                    job_id = str(uuid4())
+                    get_redis(RedisDb.JOB_DB).set(job_id, orjson.dumps({
+                        'status': 'queued',
+                        'transactions': client_submitted_data['transactions'],
+                    }))
+                    get_redis(RedisDb.JOB_DB).rpush(REDIS_JOB_IDS_KEY, job_id)
+                    get_queue().put(job_id)
+                    return {'job_id': job_id}
+                abort(400, 'JSON param "transactions" must be a non-empty list of transactions.')
+        abort(400, 'JSON data params must be an object with a single key: "graph_feature" or "transactions".')
     abort(400,
             'JSON data params must be delivered in the body with the POST request. Param details are specified in the README file.')
 
@@ -505,54 +512,51 @@ def get_help():
             'description': 'Deletes all transaction data stored in Redis.',
             'example_curl': 'curl -X DELETE localhost:5173/transaction_data'
         },
-        '/transaction_data_view': {
+        '/transaction_data_view (GET)': {
             'description': 'Returns a default slice of the transaction data stored in Redis (first 5 entries).',
             'example_curl': 'curl localhost:5173/transaction_data_view'
         },
-         '/transaction_data_view?limit=<int>&offset=<int>': {
+        '/transaction_data_view?limit=<int>&offset=<int> (GET)': {
             'description': 'Returns a slice of the transaction data stored in Redis.',
             'example_curl': 'curl "localhost:5173/transaction_data_view?limit=2&offset=7"'
         },
-         '/amt_analysis': {
+        '/amt_analysis (GET)': {
             'description': 'Returns statistical descriptions of the transaction amounts in the dataset.',
             'example_curl': 'curl "localhost:5173/amt_analysis"'
         },
-        '/amt_fraud_correlation':{
+        '/amt_fraud_correlation (GET)':{
             'description': 'Returns the correlation between transaction amount and fraud status in the dataset.',
             'example_curl': 'curl "localhost:5173/amt_fraud_correlation"'
         }, 
-         '/fraudulent_zipcode_info':{
+        '/fraudulent_zipcode_info (GET)':{
             'description': 'Returns the zipcode with the highest number of fraudulent transactions, and retrieves its geographic location.',
             'example_curl': 'curl "localhost:5173/fraudulent_zipcode_info"'
         }, 
-         '/fraud_by_state':{
+        '/fraud_by_state (GET)':{
             'description': ' Returns the number of fraudulent transactions per state.',
             'example_curl': 'curl "localhost:5173/fraud_by_state"'
         }, 
-         '/ai_analysis':{
-            'description': 'Returns the most important features and feature importances from the trained model.',
-            'example_curl': 'curl "localhost:5173/ai_analysis"'
-        }, 
-         '/jobs (GET)':{
+        '/jobs (GET)':{
             'description': 'Returns all job ids in the database.',
             'example_curl': 'curl "localhost:5173/jobs"'
         }, 
-         '/jobs (DELETE)':{
+        '/jobs (DELETE)':{
             'description': 'Clears all jobs from the jobs database.',
             'example_curl': 'curl -X DELETE "localhost:5173/jobs"'
-        }, 
+        },
         '/jobs (POST)': {
             'description': 'Creates a job for plotting a feature specified by the user.',
-            'Graph Feature Parameters': ["gender", "trans_month", "trans_dayOfWeek", "category"],
+            'graph_feature Parameters': ["gender", "trans_month", "trans_dayOfWeek", "category"],
+            'transactions (list of objects) Parameters': [f'trans_date_trans_time ({TRANSACTION_DATE_TIME_FORMAT})', 'merchant (str)', 'category (str)', 'amt (float)', 'lat (float)', 'long (float)', 'job (str)', 'merch_lat (float)', 'merch_long (float)'],
             'example_curl': 'curl -X POST localhost:5173/jobs -d "{\"graph_feature\": \"gender\"}" -H "Content-Type: application/json"'
         },
-        '/jobs/<id>' :{
+        '/jobs/<id> (GET)' :{
             'description': 'Returns information about the specified job id.',
-            'example_curl': 'curl -X DELETE "localhost:5173/jobs/99e6820f-0e4f-4b55-8052-7845ea390a44"'
+            'example_curl': 'curl "localhost:5173/jobs/99e6820f-0e4f-4b55-8052-7845ea390a44"'
         },
-        '/results/<id>' :{
+        '/results/<id> (GET)' :{
             'description': ' Returns the job result as a image file download.',
-            'example_curl': 'curl -X DELETE "localhost:5173/results/99e6820f-0e4f-4b55-8052-7845ea390a44"'
+            'example_curl': 'curl "localhost:5173/results/99e6820f-0e4f-4b55-8052-7845ea390a44"'
         },
     }
 

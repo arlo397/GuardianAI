@@ -3,9 +3,10 @@ from io import BytesIO
 import orjson
 import pandas as pd
 import pytest
-from services import OK_200, PLOTTING_DATA_COLS, RedisDb, REDIS_JOB_IDS_KEY
+from services import OK_200, PLOTTING_DATA_COLS, RedisDb, REDIS_JOB_IDS_KEY, TRANSACTION_DATE_TIME_FORMAT
 from typing import Any
 from unittest.mock import patch, MagicMock, Mock
+from werkzeug.exceptions import HTTPException
 import zipfile
 
 example_dataframe = pd.DataFrame({
@@ -152,7 +153,7 @@ def test_attempt_fetch_transaction_data_from_kaggle_succeeds_with_good_env(mock_
   },
   {},
 ])
-def test__attempt_read_transaction_data_from_disk_fails_with_bad_env(bad_env):
+def test_attempt_read_transaction_data_from_disk_fails_with_bad_env(bad_env):
   with patch.dict('os.environ', bad_env, clear=True):
     with patch('logging.error') as mock_error:
       assert api._attempt_read_transaction_data_from_disk() is None
@@ -266,7 +267,246 @@ def test_get_transaction_data_view_succeeds_with_good_args(arg: str, expected_st
     for idx in range(expected_start_idx, expected_end_idx):
       mock_redis.get.assert_any_call(idx)
 
-# TODO: INSERT ANALYSIS FUNCTION TESTS HERE
+def test_AnalysisManager_init():
+  am = api.AnalysisManager(['required_col'])
+  assert am.required_cols == ['required_col']
+
+@pytest.mark.parametrize('data', [None, []])
+def test_AnalysisManager_enter_fails_on_bad_data(data):
+  with patch('api.get_transaction_data_from_redis') as mock_get_transaction_data_from_redis:
+    mock_get_transaction_data_from_redis.return_value = data
+    with patch('api.abort', side_effect=Exception) as mock_abort:
+      am = api.AnalysisManager(['col1', 'col2'])
+      with pytest.raises(Exception):
+        am.__enter__()
+      mock_abort.assert_called_once_with(400, 'Data must be loaded into Redis before analysis can be performed.')
+    mock_get_transaction_data_from_redis.assert_called_once_with()
+
+@patch('api.abort', side_effect=Exception)
+@patch('api.get_transaction_data_from_redis')
+def test_AnalysisManager_enter_fails_on_missing_cols(mock_get_transaction_data_from_redis, mock_abort):
+  mock_get_transaction_data_from_redis.return_value = [
+    {
+      'col1': 0,
+    },
+    {
+      'col1': 1,
+    },
+    {
+      'col1': 2,
+    },
+  ]
+  am = api.AnalysisManager(['col1', 'col2'])
+  with pytest.raises(Exception):
+    am.__enter__()
+  mock_abort.assert_called_once_with(500, 'Required column col2 is missing from the dataset.')
+  mock_get_transaction_data_from_redis.assert_called_once_with()
+
+@patch('api.get_transaction_data_from_redis')
+def test_AnalysisManager_enter_drops_unused_cols_and_succeeds(mock_get_transaction_data_from_redis):
+  mock_get_transaction_data_from_redis.return_value = [
+    {
+      'col1': 0,
+      'col2': 3,
+      'col3': 6,
+    },
+    {
+      'col1': 1,
+      'col2': 4,
+      'col3': 7,
+    },
+    {
+      'col1': 2,
+      'col2': 5,
+      'col3': 8,
+    },
+  ]
+  am = api.AnalysisManager(['col1', 'col2'])
+  df = am.__enter__()
+  mock_get_transaction_data_from_redis.assert_called_once_with()
+  assert (df.columns == ['col1', 'col2']).all()
+
+def test_AnalysisManager_exit_propagates_HTTPExceptions():
+  am = api.AnalysisManager(['col1', 'col2'])
+  ex_type = HTTPException
+  ex_val = HTTPException()
+  assert not am.__exit__(ex_type, ex_val, None)
+
+def test_AnalysisManager_exit_ignores_None_Exceptions():
+  am = api.AnalysisManager(['col1', 'col2'])
+  assert am.__exit__(None, None, None)
+
+@pytest.mark.parametrize('exception', [ValueError('some bs value error'), Exception('some other statistics exception')])
+def test_AnalysisManager_exit_aborts_on_all_other_exceptions(exception: Exception):
+  am = api.AnalysisManager(['col1', 'col2'])
+  with patch('api.abort', side_effect=Exception) as mock_abort:
+    with pytest.raises(Exception):
+      am.__exit__(type(exception), exception, None)
+    mock_abort.assert_called_once_with(500, 'Error computing statistics.')
+
+@patch('api.get_transaction_data_from_redis')
+def test_amt_analysis(mock_get_transaction_data_from_redis):
+  mock_get_transaction_data_from_redis.return_value = [
+    {'amt': 1},
+    {'amt': 2},
+    {'amt': 3},
+    {'amt': 4},
+    {'amt': 5},
+    {'amt': 6},
+    {'amt': 7},
+    {'amt': 8},
+    {'amt': 9},
+  ]
+  assert api.amt_analysis() == {
+    '25%': 3.0,
+    '50%': 5.0,
+    '75%': 7.0,
+    'count': 9.0,
+    'max': 9.0,
+    'mean': 5.0,
+    'min': 1.0,
+    'std': 2.7386127875258306,
+  }
+
+@patch('api.get_transaction_data_from_redis')
+def test_compute_correlation(mock_get_transaction_data_from_redis):
+  mock_get_transaction_data_from_redis.return_value = [
+    {'amt': 1, 'is_fraud': 0},
+    {'amt': 2, 'is_fraud': 0},
+    {'amt': 3, 'is_fraud': 0},
+    {'amt': 4, 'is_fraud': 0},
+    {'amt': 5, 'is_fraud': 1},
+    {'amt': 6, 'is_fraud': 0},
+    {'amt': 7, 'is_fraud': 0},
+    {'amt': 8, 'is_fraud': 0},
+    {'amt': 9, 'is_fraud': 0},
+  ]
+  result: dict[str, dict[str, float]] = api.compute_correlation()
+  assert result.keys() == {'amt', 'is_fraud'}
+  assert result['amt'].keys() == {'amt', 'is_fraud'}
+  assert result['is_fraud'].keys() == {'amt', 'is_fraud'}
+  assert isinstance(result['amt']['amt'], float)
+  assert isinstance(result['amt']['is_fraud'], float)
+  assert isinstance(result['is_fraud']['amt'], float)
+  assert isinstance(result['is_fraud']['is_fraud'], float)
+
+fraudulent_zipcode_test_data = [
+  {'zip': 11111, 'is_fraud': 0},
+  {'zip': 22222, 'is_fraud': 1},
+  {'zip': 33333, 'is_fraud': 0},
+  {'zip': 44444, 'is_fraud': 0},
+  {'zip': 55555, 'is_fraud': 0},
+  {'zip': 11111, 'is_fraud': 0},
+  {'zip': 22222, 'is_fraud': 1},
+  {'zip': 33333, 'is_fraud': 1},
+  {'zip': 44444, 'is_fraud': 0},
+  {'zip': 55555, 'is_fraud': 0},
+]
+
+@patch('api.abort', side_effect=Exception)
+@patch('api.get_bing_api_key', side_effect=Exception)
+def test_fraudulent_zipcode_info_fails_without_bing_api_key(mock_get_bing_api_key, mock_abort):
+  with pytest.raises(Exception):
+    api.fraudulent_zipcode_info()
+  mock_get_bing_api_key.assert_called_once_with()
+  mock_abort.assert_called_once_with(500, 'Error fetching bing api key.')
+
+@patch('api.abort', side_effect=Exception)
+@patch('requests.get', side_effect=Exception)
+@patch('api.get_transaction_data_from_redis')
+@patch('api.get_bing_api_key')
+def test_fraudulent_zipcode_info_fails_when_requests_get_fails(
+  mock_get_bing_api_key, mock_get_transaction_data_from_redis, mock_requests_get, mock_abort):
+  mock_get_bing_api_key.return_value = 'afakeapikey'
+  mock_get_transaction_data_from_redis.return_value = fraudulent_zipcode_test_data
+  with pytest.raises(Exception):
+    api.fraudulent_zipcode_info()
+  mock_get_bing_api_key.assert_called_once_with()
+  mock_requests_get.assert_called_once_with('http://dev.virtualearth.net/REST/v1/Locations/US/22222', params={'key': 'afakeapikey'})
+  mock_abort.assert_called_once_with(500, 'Error fetching location.')
+
+def _fake_json_response(fake_json: Any) -> Mock:
+  response = Mock(status_code=200)
+  response.json.return_value = fake_json
+  return response
+
+@pytest.mark.parametrize('response', [
+  None,
+  Mock(status_code=0),
+  Mock(status_code=200),
+  _fake_json_response(None),
+  _fake_json_response({}),
+  _fake_json_response({'resourceSets': 7}),
+  _fake_json_response({'resourceSets': []}),
+  _fake_json_response({'resourceSets': {}}),
+  _fake_json_response({'resourceSets': [{}]}),
+  _fake_json_response({'resourceSets': [{'resources': 'rip'}]}),
+  _fake_json_response({'resourceSets': [{'resources': []}]}),
+  _fake_json_response({'resourceSets': [{'resources': [None]}]}),
+  _fake_json_response({'resourceSets': [{'resources': [{}]}]}),
+  _fake_json_response({'resourceSets': [{'resources': [{'point': False}]}]}),
+  _fake_json_response({'resourceSets': [{'resources': [{'point': {}}]}]}),
+  _fake_json_response({'resourceSets': [{'resources': [{'point': {'coordinates': 5}}]}]}),
+  _fake_json_response({'resourceSets': [{'resources': [{'point': {'coordinates': None}}]}]}),
+  _fake_json_response({'resourceSets': [{'resources': [{'point': {'coordinates': [0.0]}}]}]}),
+  _fake_json_response({'resourceSets': [{'resources': [{'point': {'coordinates': [0.0, 1.0, 2.0]}}]}]}),
+  _fake_json_response({'resourceSets': [{'resources': [{'point': {'coordinates': [-90.0, 200.0]}}]}]}),
+  _fake_json_response({'resourceSets': [{'resources': [{'point': {'coordinates': [-100.0, 90.0]}}]}]}),
+  _fake_json_response({'resourceSets': [{'resources': [{'point': {'coordinates': [-10.0, 200.0]}}]}]}),
+  _fake_json_response({'resourceSets': [{'resources': [{'point': {'coordinates': [-90, 90]}}]}]}),
+])
+def test_fraudulent_zipcode_info_fails_when_response_cannot_parse(response):
+  with patch('api.get_bing_api_key') as mock_get_bing_api_key:
+    mock_get_bing_api_key.return_value = 'afakeapikey'
+    with patch('api.get_transaction_data_from_redis') as mock_get_transaction_data_from_redis:
+      mock_get_transaction_data_from_redis.return_value = fraudulent_zipcode_test_data
+      with patch('requests.get') as mock_requests_get:
+        mock_requests_get.return_value = response
+        with patch('api.abort', side_effect=Exception) as mock_abort:
+          with pytest.raises(Exception):
+            api.fraudulent_zipcode_info()
+          mock_abort.assert_called_once_with(500, 'Error parsing virtualearth response.')
+        mock_requests_get.assert_called_once_with('http://dev.virtualearth.net/REST/v1/Locations/US/22222', params={'key': 'afakeapikey'})
+    mock_get_bing_api_key.assert_called_once_with()
+
+@patch('requests.get')
+@patch('api.get_transaction_data_from_redis')
+@patch('api.get_bing_api_key')
+def test_fraudulent_zipcode_info_succeeds_with_valid_api_key_data_and_response(mock_get_bing_api_key, mock_get_transaction_data_from_redis, mock_requests_get):
+  mock_get_bing_api_key.return_value = 'afakeapikey'
+  mock_get_transaction_data_from_redis.return_value = fraudulent_zipcode_test_data
+  mock_requests_get.return_value = _fake_json_response({'resourceSets': [{'resources': [{'point': {'coordinates': [0.0, 0.0]}}]}]})
+  assert api.fraudulent_zipcode_info() == {
+    'most_fraudulent_zipcode': '22222',
+    'fraud_count': 2,
+    'latitude': 0.0,
+    'longitude': 0.0,
+    'Google Maps Link': 'https://www.google.com/maps/search/?api=1&query=0.0,0.0'
+  }
+  mock_get_bing_api_key.assert_called_once_with()
+  mock_requests_get.assert_called_once_with('http://dev.virtualearth.net/REST/v1/Locations/US/22222', params={'key': 'afakeapikey'})
+
+@patch('api.get_transaction_data_from_redis')
+def test_fraud_by_state(mock_get_transaction_data_from_redis):
+  mock_get_transaction_data_from_redis.return_value = [
+    {'state': 'AZ', 'is_fraud': 0},
+    {'state': 'AL', 'is_fraud': 1},
+    {'state': 'SC', 'is_fraud': 0},
+    {'state': 'CA', 'is_fraud': 1},
+    {'state': 'AZ', 'is_fraud': 0},
+    {'state': 'IA', 'is_fraud': 1},
+    {'state': 'IA', 'is_fraud': 0},
+    {'state': 'IA', 'is_fraud': 1},
+    {'state': 'NY', 'is_fraud': 0},
+    {'state': 'NJ', 'is_fraud': 1},
+    {'state': 'TX', 'is_fraud': 0},
+  ]
+  assert api.fraud_by_state() == {
+    'AL': 1,
+    'CA': 1,
+    'IA': 2,
+    'NJ': 1,
+  }
 
 @patch('api.get_redis')
 def test_get_all_existing_job_ids(mock_get_redis):
@@ -301,11 +541,63 @@ def test_clear_all_jobs_calls_abort_on_failure(mock_get_redis, mock_abort):
 
 @pytest.mark.parametrize('json,error_message', [
   (None, 'JSON data params must be delivered in the body with the POST request. Param details are specified in the README file.'),
-  (['graph_feature'], 'JSON data params must be an object with a single key: "graph_feature".'),
-  ({'k': 'v', 'k2': 'v2'}, 'JSON data params must be an object with a single key: "graph_feature".'),
-  ({'k': 'v'}, 'JSON data params must be an object with a single key: "graph_feature".'),
+  (['graph_feature'], 'JSON data params must be an object with a single key: "graph_feature" or "transactions".'),
+  ({'k': 'v', 'k2': 'v2'}, 'JSON data params must be an object with a single key: "graph_feature" or "transactions".'),
+  ({'k': 'v'}, 'JSON data params must be an object with a single key: "graph_feature" or "transactions".'),
   ({'graph_feature': 5}, f'JSON param "graph_feature" must be included in {PLOTTING_DATA_COLS}'),
   ({'graph_feature': 'notavalidone'}, f'JSON param "graph_feature" must be included in {PLOTTING_DATA_COLS}'),
+  (['transactions'], 'JSON data params must be an object with a single key: "graph_feature" or "transactions".'),
+  ({'transactions': 5}, 'JSON param "transactions" must be a non-empty list of transactions.'),
+  ({'transactions': []}, 'JSON param "transactions" must be a non-empty list of transactions.'),
+  ({'transactions': [None]}, 'JSON param "transactions" must be a list of objects.'),
+  ({'transactions': [1, 2]}, 'JSON param "transactions" must be a list of objects.'),
+  ({'transactions': ['f', {}, {}]}, 'JSON param "transactions" must be a list of objects.'),
+  ({'transactions': ['a', 'b']}, 'JSON param "transactions" must be a list of objects.'),
+  ({'transactions': [{}]}, 'JSON param "transactions" has object missing key trans_date_trans_time.'),
+  ({'transactions': [{
+    'trans_date_trans_time': 'hmm',
+    'merchant': 'amerchant',
+    'category': 'acategory',
+    'amt': 1.23,
+    'lat': 4.56,
+    'long': 7.89,
+    'job': 'painter',
+    'merch_lat': 7.0,
+  }]}, 'JSON param "transactions" has object missing key merch_long.'),
+  ({'transactions': [{
+    'trans_date_trans_time': 'hmm',
+    'merchant': 'amerchant',
+    'category': 'acategory',
+    'amt': 1.23,
+    'lat': 4.56,
+    'long': 7.89,
+    'job': 'painter',
+    'merch_lat': 7.0,
+    'merch_long': 'uhohwrongtype',
+  }]}, 'JSON param "transactions" has object with key merch_long of incorrect type. (Should be <class \'float\'>).'),
+  ({'transactions': [{
+    'trans_date_trans_time': 'hmm',
+    'merchant': 'amerchant',
+    'category': 'acategory',
+    'amt': 1.23,
+    'lat': 4.56,
+    'long': 7.89,
+    'job': 'painter',
+    'merch_lat': 7.0,
+    'merch_long': 7.0,
+    'anextrakey': 'rip',
+  }]}, 'JSON param "transactions" has an object with too many keys.'),
+  ({'transactions': [{
+    'trans_date_trans_time': '21/06/2020 12:167',
+    'merchant': 'amerchant',
+    'category': 'acategory',
+    'amt': 1.23,
+    'lat': 4.56,
+    'long': 7.89,
+    'job': 'painter',
+    'merch_lat': 7.0,
+    'merch_long': 7.0,
+  }]}, f'JSON param "transactions" has an object with trans_date_trans_time in invalid format. (Should be {TRANSACTION_DATE_TIME_FORMAT}.)')
 ])
 def test_post_job_fails_with_appropriate_error_message_on_bad_input(json: Any, error_message: str):
   with api.app.test_request_context(content_type='application/json', json=json):
@@ -317,7 +609,7 @@ def test_post_job_fails_with_appropriate_error_message_on_bad_input(json: Any, e
 @patch('api.get_queue')
 @patch('api.get_redis')
 @patch('api.uuid4')
-def test_post_job_succeeds_on_valid_input(mock_uuid, mock_get_redis, mock_get_queue):
+def test_post_job_succeeds_on_valid_graph_feature_input(mock_uuid, mock_get_redis, mock_get_queue):
   mock_uuid.return_value = 'oohanid'
   mock_redis = Mock()
   mock_queue = Mock()
@@ -327,6 +619,33 @@ def test_post_job_succeeds_on_valid_input(mock_uuid, mock_get_redis, mock_get_qu
     assert api.post_job() == {'job_id': 'oohanid'}
   mock_get_redis.assert_any_call(RedisDb.JOB_DB)
   mock_redis.set.assert_called_once_with('oohanid', b'{"status":"queued","graph_feature":"gender"}')
+  mock_redis.rpush.assert_called_once_with(REDIS_JOB_IDS_KEY, 'oohanid')
+  mock_get_queue.assert_called_once_with()
+  mock_queue.put.assert_called_once_with('oohanid')
+
+@patch('api.get_queue')
+@patch('api.get_redis')
+@patch('api.uuid4')
+def test_post_job_succeeds_on_valid_transactions_input(mock_uuid, mock_get_redis, mock_get_queue):
+  mock_uuid.return_value = 'oohanid'
+  mock_redis = Mock()
+  mock_queue = Mock()
+  mock_get_redis.return_value = mock_redis
+  mock_get_queue.return_value = mock_queue
+  with api.app.test_request_context(content_type='application/json', json={'transactions': [{
+    'trans_date_trans_time': '21/06/2020 12:16',
+    'merchant': 'amerchant',
+    'category': 'acategory',
+    'amt': 1.23,
+    'lat': 4.56,
+    'long': 7.89,
+    'job': 'painter',
+    'merch_lat': 7.0,
+    'merch_long': 7.0,
+  }]}):
+    assert api.post_job() == {'job_id': 'oohanid'}
+  mock_get_redis.assert_any_call(RedisDb.JOB_DB)
+  mock_redis.set.assert_called_once_with('oohanid', b'{"status":"queued","transactions":[{"amt":1.23,"category":"acategory","job":"painter","lat":4.56,"long":7.89,"merch_lat":7.0,"merch_long":7.0,"merchant":"amerchant","trans_date_trans_time":"21/06/2020 12:16"}]}')
   mock_redis.rpush.assert_called_once_with(REDIS_JOB_IDS_KEY, 'oohanid')
   mock_get_queue.assert_called_once_with()
   mock_queue.put.assert_called_once_with('oohanid')
@@ -400,3 +719,6 @@ def test_get_job_calls_send_file_if_a_result_is_found(mock_get_job_info, mock_ge
   assert len(send_file_call.kwargs) == 3
   assert send_file_call.args[0].getvalue() == b'afakebinarystoredvalue'
   assert send_file_call.kwargs == {'mimetype': 'image/png', 'as_attachment': True, 'download_name': 'plot ajobid.png'}
+
+def test_get_help():
+  assert isinstance(api.get_help(), str)

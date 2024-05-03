@@ -58,17 +58,26 @@ def test_get_queue_handles_initialized_queue():
 
 @patch.dict('os.environ', {}, clear=True)
 def test_get_log_level_handles_undefined_env_var():
-  with pytest.raises(Exception, match='LOG_LVL not defined in environment variables.'):
+  with pytest.raises(Exception, match=f'{services.LOG_LVL_VAR} invalid or not defined in environment variables.'):
     services.get_log_level()
 
-@patch.dict('os.environ', {'LOG_LEVEL': 'nonsense'}, clear=True)
+@patch.dict('os.environ', {services.LOG_LVL_VAR: 'nonsense'}, clear=True)
 def test_get_log_level_handles_invalid_env_var():
-  with pytest.raises(Exception, match='LOG_LVL not defined in environment variables.'):
+  with pytest.raises(Exception, match=f'{services.LOG_LVL_VAR} invalid or not defined in environment variables.'):
     services.get_log_level()
 
-@patch.dict('os.environ', {'LOG_LEVEL': 'CRITICAL'}, clear=True)
+@patch.dict('os.environ', {services.LOG_LVL_VAR: 'CRITICAL'}, clear=True)
 def test_get_log_level_handles_valid_env_var():
   assert services.get_log_level() == 'CRITICAL'
+
+@patch.dict('os.environ', {}, clear=True)
+def test_get_bing_api_key_handles_undefined_env_var():
+  with pytest.raises(Exception, match=f'{services.BING_API_KEY_VAR} not defined in environment variables.'):
+    services.get_bing_api_key()
+
+@patch.dict('os.environ', {services.BING_API_KEY_VAR: 'apikey1234'}, clear=True)
+def test_get_bing_api_key_handles_valid_env_var():
+  assert services.get_bing_api_key() == 'apikey1234'
 
 def test_pipeline_data_out_of_redis():
   mock_redis = MagicMock()

@@ -30,6 +30,9 @@ from typing import Any, Optional
 # Merchant longitude (deg)
 # Is Fraud (0 = no, 1 = yes)
 
+INPUT_SIZE = 1196 # This was calculated by code len(training_inputs[0]) since we onehot encode things and flatten that input vector
+# If the input format changes go back to using len and then update this hardcoded value
+
 def extract_row(dict: dict[str, str]) -> tuple[list[Any], int]:
   date = datetime.strptime(dict['trans_date_trans_time'], '%d/%m/%Y %H:%M')
   result = [date.day, date.month, date.year, date.weekday(), date.hour, date.minute, dict['merchant'], dict['category'], float(dict['amt']), float(dict['lat']), float(dict['long']), dict['job'], float(dict['merch_lat']), float(dict['merch_long']), int(dict['is_fraud'])]
