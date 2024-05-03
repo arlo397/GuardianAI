@@ -9,7 +9,7 @@ import pandas as pd
 from redis import Redis
 import requests
 from services import OK_200, PLOTTING_DATA_COLS, REDIS_JOB_IDS_KEY, TRANSACTION_DATE_TIME_FORMAT, RedisDb, get_bing_api_key, get_log_level, init_backend_services, \
-      get_queue as generic_get_queue, get_redis as generic_get_redis, pipeline_data_out_of_redis
+      get_queue as generic_get_queue, get_redis as generic_get_redis, pipeline_data_out_of_redis, validate_transaction_list
 import socket
 from typing import Any, Optional
 import urllib3
@@ -328,7 +328,7 @@ def fraudulent_zipcode_info() -> dict[str, str | float]:
 
     return {
         'most_fraudulent_zipcode': most_fraudulent_zipcode,
-        'fraud_count': max_fraud_count,
+        'fraud_count': int(max_fraud_count), # This is an int64 from numpy and we have to make it an int for JSON
         'latitude': lat,
         'longitude': lon,
         'Google Maps Link': f'https://www.google.com/maps/search/?api=1&query={lat},{lon}'
@@ -374,13 +374,6 @@ def clear_all_jobs() -> tuple[str, int]:
     if get_redis(RedisDb.JOB_DB).flushdb(): return OK_200
     abort(500, 'Error flushing jobs db.')
 
-def _is_valid_date(date_string: str):
-    try:
-        datetime.strptime(date_string, TRANSACTION_DATE_TIME_FORMAT)
-        return True
-    except ValueError:
-        return False
-
 # curl -X POST localhost:5173/jobs -d '{"graph_feature": "gender"}' -H "Content-Type: application/json"
 # curl -X POST localhost:5173/jobs -d '{"graph_feature": "trans_month"}' -H "Content-Type: application/json"
 # curl -X POST localhost:5173/jobs -d '{"graph_feature": "trans_dayOfWeek"}' -H "Content-Type: application/json"
@@ -413,24 +406,8 @@ def post_job() -> dict[str, str]:
                 abort(400, f'JSON param "graph_feature" must be included in {PLOTTING_DATA_COLS}')
             elif 'transactions' in client_submitted_data:
                 if isinstance(client_submitted_data['transactions'], list) and client_submitted_data['transactions']:
-                    required_keys_and_types = {
-                        'trans_date_trans_time': str,
-                        'merchant': str,
-                        'category': str,
-                        'amt': float,
-                        'lat': float,
-                        'long': float,
-                        'job': str,
-                        'merch_lat': float,
-                        'merch_long': float,
-                    }
-                    for t in client_submitted_data['transactions']:
-                        if not isinstance(t, dict): abort(400, 'JSON param "transactions" must be a list of objects.')
-                        for k, v in required_keys_and_types.items():
-                            if k not in t: abort(400, f'JSON param "transactions" has object missing key {k}.')
-                            if not isinstance(t[k], v): abort(400, f'JSON param "transactions" has object with key {k} of incorrect type. (Should be {v}).')
-                        if len(t) > len(required_keys_and_types): abort(400, 'JSON param "transactions" has an object with too many keys.')
-                        if not _is_valid_date(t['trans_date_trans_time']): abort(400, f'JSON param "transactions" has an object with trans_date_trans_time in invalid format. (Should be {TRANSACTION_DATE_TIME_FORMAT}.)')
+                    err = validate_transaction_list(client_submitted_data)
+                    if err is not None: abort(400, err)
                     job_id = str(uuid4())
                     get_redis(RedisDb.JOB_DB).set(job_id, orjson.dumps({
                         'status': 'queued',
@@ -485,7 +462,7 @@ def get_job_result(id: str) -> Any:
                 abort(500, 'Job marked as completed but no result found in DB.')
             return send_file(BytesIO(result), mimetype='image/png', as_attachment=True,
                             download_name=f'plot {id}.png')
-        abort(400, 'Job is not complete.')
+        abort(400, f'Job is not complete. Current job status is {job_info["status"]}.')
     logging.error(f'Job {id} is malformed. {job_info}')
     abort(500, 'Malformed job.')
 

@@ -33,22 +33,21 @@ from typing import Any, Optional
 INPUT_SIZE = 1196 # This was calculated by code len(training_inputs[0]) since we onehot encode things and flatten that input vector
 # If the input format changes go back to using len and then update this hardcoded value
 
-def extract_row(dict: dict[str, str]) -> tuple[list[Any], int]:
+def extract_row(dict: dict[str, str]) -> list[Any]:
   date = datetime.strptime(dict['trans_date_trans_time'], '%d/%m/%Y %H:%M')
-  result = [date.day, date.month, date.year, date.weekday(), date.hour, date.minute, dict['merchant'], dict['category'], float(dict['amt']), float(dict['lat']), float(dict['long']), dict['job'], float(dict['merch_lat']), float(dict['merch_long']), int(dict['is_fraud'])]
-  return result
+  return [date.day, date.month, date.year, date.weekday(), date.hour, date.minute, dict['merchant'], dict['category'], float(dict['amt']), float(dict['lat']), float(dict['long']), dict['job'], float(dict['merch_lat']), float(dict['merch_long']), int(dict['is_fraud'])]
 
-def _onehot_encode(row: list[Any], merchants: list[str], categories: list[str], jobs: list[str]) -> list[Any]:
+def onehot_encode(row: list[Any], merchants: list[str], categories: list[str], jobs: list[str]) -> list[Any]:
   row[6] = [1 if row[6] == m else 0 for m in merchants]
   row[7] = [1 if row[7] == c else 0 for c in categories]
   row[11] = [1 if row[11] == j else 0 for j in jobs]
   return [item if isinstance(item, list) else item for item in row]
 
-def _flatten(lst: list[Any]) -> list[Any]:
+def flatten(lst: list[Any]) -> list[Any]:
   flattened = []
   for item in lst:
     if isinstance(item, list):
-      flattened.extend(_flatten(item))
+      flattened.extend(flatten(item))
     else:
       flattened.append(item)
   return flattened
@@ -80,11 +79,17 @@ class TestValidateTrainSplit():
     merchants = sorted(merchants)
     categories = sorted(categories)
     jobs = sorted(jobs)
-    encoder = partial(_onehot_encode, merchants=merchants, categories=categories, jobs=jobs)
+    with open('merchants.txt', 'w') as file:
+      for m in merchants: file.write(f'{m}\n')
+    with open('categories.txt', 'w') as file:
+      for c in categories: file.write(f'{c}\n')
+    with open('jobs.txt', 'w') as file:
+      for j in jobs: file.write(f'{j}\n')
+    encoder = partial(onehot_encode, merchants=merchants, categories=categories, jobs=jobs)
     logging.info('Transforming data')
     with Pool(processes=cpu_count()) as pool:
       self.rows = pool.map(encoder, self.rows)
-      self.rows = pool.map(_flatten, self.rows)
+      self.rows = pool.map(flatten, self.rows)
     logging.info('Shuffling data')
     random.shuffle(self.rows)
     logging.info('Done preparing data')

@@ -1,7 +1,7 @@
 FROM python:3.10-slim
 
 WORKDIR /app
-COPY test/requirements_test.txt ./
-RUN pip install -r requirements_test.txt
+COPY src/requirements_api.txt src/requirements_worker.txt ./
+RUN pip install -r requirements_api.txt -r requirements_worker.txt pytest
 
-COPY src/api.py src/services.py src/worker.py test/test_api.py test/test_services.py test/test_worker.py ./
+COPY src/api.py src/services.py src/worker.py src/ml/input_vectorization.py src/ml/ml_model.py test/test_api.py test/test_services.py test/test_worker.py ./

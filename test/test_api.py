@@ -549,55 +549,6 @@ def test_clear_all_jobs_calls_abort_on_failure(mock_get_redis, mock_abort):
   (['transactions'], 'JSON data params must be an object with a single key: "graph_feature" or "transactions".'),
   ({'transactions': 5}, 'JSON param "transactions" must be a non-empty list of transactions.'),
   ({'transactions': []}, 'JSON param "transactions" must be a non-empty list of transactions.'),
-  ({'transactions': [None]}, 'JSON param "transactions" must be a list of objects.'),
-  ({'transactions': [1, 2]}, 'JSON param "transactions" must be a list of objects.'),
-  ({'transactions': ['f', {}, {}]}, 'JSON param "transactions" must be a list of objects.'),
-  ({'transactions': ['a', 'b']}, 'JSON param "transactions" must be a list of objects.'),
-  ({'transactions': [{}]}, 'JSON param "transactions" has object missing key trans_date_trans_time.'),
-  ({'transactions': [{
-    'trans_date_trans_time': 'hmm',
-    'merchant': 'amerchant',
-    'category': 'acategory',
-    'amt': 1.23,
-    'lat': 4.56,
-    'long': 7.89,
-    'job': 'painter',
-    'merch_lat': 7.0,
-  }]}, 'JSON param "transactions" has object missing key merch_long.'),
-  ({'transactions': [{
-    'trans_date_trans_time': 'hmm',
-    'merchant': 'amerchant',
-    'category': 'acategory',
-    'amt': 1.23,
-    'lat': 4.56,
-    'long': 7.89,
-    'job': 'painter',
-    'merch_lat': 7.0,
-    'merch_long': 'uhohwrongtype',
-  }]}, 'JSON param "transactions" has object with key merch_long of incorrect type. (Should be <class \'float\'>).'),
-  ({'transactions': [{
-    'trans_date_trans_time': 'hmm',
-    'merchant': 'amerchant',
-    'category': 'acategory',
-    'amt': 1.23,
-    'lat': 4.56,
-    'long': 7.89,
-    'job': 'painter',
-    'merch_lat': 7.0,
-    'merch_long': 7.0,
-    'anextrakey': 'rip',
-  }]}, 'JSON param "transactions" has an object with too many keys.'),
-  ({'transactions': [{
-    'trans_date_trans_time': '21/06/2020 12:167',
-    'merchant': 'amerchant',
-    'category': 'acategory',
-    'amt': 1.23,
-    'lat': 4.56,
-    'long': 7.89,
-    'job': 'painter',
-    'merch_lat': 7.0,
-    'merch_long': 7.0,
-  }]}, f'JSON param "transactions" has an object with trans_date_trans_time in invalid format. (Should be {TRANSACTION_DATE_TIME_FORMAT}.)')
 ])
 def test_post_job_fails_with_appropriate_error_message_on_bad_input(json: Any, error_message: str):
   with api.app.test_request_context(content_type='application/json', json=json):
@@ -673,8 +624,8 @@ def test_get_job_information_succeeds_with_good_jobid(mock_get_redis):
 
 @pytest.mark.parametrize('job_info,error_code,error_msg', [
   ({}, 500, 'Malformed job.'),
-  ({'status': 8}, 400, 'Job is not complete.'),
-  ({'status': 'queued'}, 400, 'Job is not complete.'),
+  ({'status': 8}, 400, 'Job is not complete. Current job status is 8.'),
+  ({'status': 'queued'}, 400, 'Job is not complete. Current job status is queued.'),
 ])
 def test_get_job_result_calls_abort_if_job_is_not_ready(job_info, error_code, error_msg):
   with patch('api.get_job_information') as mock_get_job_information:

@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import Enum
 from hotqueue import HotQueue
 import logging
@@ -123,3 +124,30 @@ def pipeline_data_out_of_redis(redisdb: Redis) -> list[dict[str, Any]]:
     for key in keys: pipe.get(key)
     data = pipe.execute()
   return [loads(d) for d in data]
+
+def _is_valid_date(date_string: str):
+  try:
+    datetime.strptime(date_string, TRANSACTION_DATE_TIME_FORMAT)
+    return True
+  except ValueError:
+    return False
+
+def validate_transaction_list(client_submitted_data: dict[str, list[Any]]) -> str | None:
+  required_keys_and_types = {
+    'trans_date_trans_time': str,
+    'merchant': str,
+    'category': str,
+    'amt': float,
+    'lat': float,
+    'long': float,
+    'job': str,
+    'merch_lat': float,
+    'merch_long': float,
+  }
+  for t in client_submitted_data['transactions']:
+    if not isinstance(t, dict): return 'JSON param "transactions" must be a list of objects.'
+    for k, v in required_keys_and_types.items():
+        if k not in t: return f'JSON param "transactions" has object missing key {k}.'
+        if not isinstance(t[k], v): return f'JSON param "transactions" has object with key {k} of incorrect type. (Should be {v}).'
+    if len(t) > len(required_keys_and_types): return 'JSON param "transactions" has an object with too many keys.'
+    if not _is_valid_date(t['trans_date_trans_time']): return f'JSON param "transactions" has an object with trans_date_trans_time in invalid format. (Should be {TRANSACTION_DATE_TIME_FORMAT}.)'

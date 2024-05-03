@@ -5,3 +5,5 @@ pandas
 requests
 redis
 seaborn
+torcheval
+torch

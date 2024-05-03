@@ -104,3 +104,82 @@ def test_pipeline_data_out_of_redis():
     call(b'2'),
   ])
   mock_pipe.execute.assert_called_once_with()
+
+@pytest.mark.parametrize('datestr,expect', [
+  ('1/2/3 13:52', False),
+  ('01/02/03 13:52', False),
+  ('a', False),
+  ('a/b/c 13:52', False),
+  ('01/02/2024 00:00', True),
+  ('01/02/2024 24:00', False),
+  ('01/10/202564 12:34', False),
+  ('01/10/2025 17:89', False),
+  ('01/10/2025 25:30', False),
+])
+def test_is_valid_date(datestr: str, expect: bool):
+  assert services._is_valid_date(datestr) == expect
+
+@pytest.mark.parametrize('client_submitted_data,expected_error_message', [
+  ({'transactions': [None]}, 'JSON param "transactions" must be a list of objects.'),
+  ({'transactions': [1, 2]}, 'JSON param "transactions" must be a list of objects.'),
+  ({'transactions': ['f', {}, {}]}, 'JSON param "transactions" must be a list of objects.'),
+  ({'transactions': ['a', 'b']}, 'JSON param "transactions" must be a list of objects.'),
+  ({'transactions': [{}]}, 'JSON param "transactions" has object missing key trans_date_trans_time.'),
+  ({'transactions': [{
+    'trans_date_trans_time': 'hmm',
+    'merchant': 'amerchant',
+    'category': 'acategory',
+    'amt': 1.23,
+    'lat': 4.56,
+    'long': 7.89,
+    'job': 'painter',
+    'merch_lat': 7.0,
+  }]}, 'JSON param "transactions" has object missing key merch_long.'),
+  ({'transactions': [{
+    'trans_date_trans_time': 'hmm',
+    'merchant': 'amerchant',
+    'category': 'acategory',
+    'amt': 1.23,
+    'lat': 4.56,
+    'long': 7.89,
+    'job': 'painter',
+    'merch_lat': 7.0,
+    'merch_long': 'uhohwrongtype',
+  }]}, 'JSON param "transactions" has object with key merch_long of incorrect type. (Should be <class \'float\'>).'),
+  ({'transactions': [{
+    'trans_date_trans_time': 'hmm',
+    'merchant': 'amerchant',
+    'category': 'acategory',
+    'amt': 1.23,
+    'lat': 4.56,
+    'long': 7.89,
+    'job': 'painter',
+    'merch_lat': 7.0,
+    'merch_long': 7.0,
+    'anextrakey': 'rip',
+  }]}, 'JSON param "transactions" has an object with too many keys.'),
+  ({'transactions': [{
+    'trans_date_trans_time': '21/06/2020 12:167',
+    'merchant': 'amerchant',
+    'category': 'acategory',
+    'amt': 1.23,
+    'lat': 4.56,
+    'long': 7.89,
+    'job': 'painter',
+    'merch_lat': 7.0,
+    'merch_long': 7.0,
+  }]}, f'JSON param "transactions" has an object with trans_date_trans_time in invalid format. (Should be {services.TRANSACTION_DATE_TIME_FORMAT}.)'),
+  ({'transactions': [{
+    'trans_date_trans_time': '21/06/2020 12:16',
+    'merchant': 'amerchant',
+    'category': 'acategory',
+    'amt': 1.23,
+    'lat': 4.56,
+    'long': 7.89,
+    'job': 'painter',
+    'merch_lat': 7.0,
+    'merch_long': 7.0,
+  }]}, None)
+])
+def test_validate_transaction_list(client_submitted_data, expected_error_message):
+  assert services.validate_transaction_list(client_submitted_data) == expected_error_message

@@ -27,7 +27,35 @@ def test_begin_job_marks_valid_job_as_in_progress(mock_get_redis):
   mock_redis.get.assert_called_once_with('job id')
   mock_redis.set.assert_called_once_with('job id', b'{"some job info":"info","status":"in_progress"}')
 
-# TODO: INSET _execute_job TESTS HERE
+def test_extract_row():
+  assert worker._extract_row({
+    'trans_date_trans_time': '01/02/2024 12:34',
+    'merchant': 'a merchant',
+    'category': 'a category',
+    'amt': 7.44,
+    'lat': 0.12,
+    'long': 3.45,
+    'job': 'driveway vacuumer',
+    'merch_lat': 6.78,
+    'merch_long': 9.01,
+  }) == [1, 2, 2024, 3, 12, 34, 'a merchant', 'a category', 7.44, 0.12, 3.45, 'driveway vacuumer', 6.78, 9.01]
+
+# TODO: INSERT _execute_job TESTS HERE
+
+@patch('worker._execute_graph_feature_analysis_job')
+def test_execute_job_works_for_graph_feature(mock_execute_graph_feature_analysis_job):
+  mock_execute_graph_feature_analysis_job.return_value = 7
+  assert worker._execute_job('anid', {'graph_feature': 'whatever'}) == 7
+  mock_execute_graph_feature_analysis_job.assert_called_once_with('anid', {'graph_feature': 'whatever'})
+
+@patch('worker._execute_transaction_analysis_job')
+def test_execute_job_works_for_transaction(mock_execute_transaction_analysis_job):
+  mock_execute_transaction_analysis_job.return_value = 8
+  assert worker._execute_job('ajobid', {'transactions': []}) == 8
+  mock_execute_transaction_analysis_job.assert_called_once_with('ajobid', {'transactions': []})
+
+def test_execute_returns_false_for_invalid_job():
+  assert not worker._execute_job('ajobid', {'notarealkey': 'uhoh'})
 
 @pytest.mark.parametrize('success,expected_status', [
   (True, 'completed'),

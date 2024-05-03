@@ -19,7 +19,7 @@ services:
       KAGGLE_DATASET: credit-card-fraud-prediction
       KAGGLE_FILENAME: fraud test.csv
       FALLBACK_DATASET_PATH: /data/fraud_test.csv
-      BING_API_KEY: api-key
+      BING_API_KEY: AoaZqu_awoToijquulNRBaNbW98dniWa17O-QGrlBxP6Nv60C-3YaMIDkLqNb5UL
     ports:
       - 5173:5173
     volumes:
