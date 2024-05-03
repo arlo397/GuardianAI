@@ -20,26 +20,38 @@ The dataset "Credit Card Fraud Prediction" is designed to evaluate and compare v
 This dataset is a rich resource that fosters the development, testing, and comparison of different fraud detection techniques. It is a valuable tool for researchers and practitioners dedicated to advancing the field of fraud detection through innovative modeling and analysis.
 
 ### Application Architecture
+
 The simplest way to define the goal of our microservice is to offer clients a means to query and make predictions about credit card fraud data. To achieve this, our microservice retrieves data hosted on Kaggle and presists it into a Redis Database. This data is then used as the source for analyses triggered by clients submitting HTTP requests. To achieve this, we used Flask, which is a web framework that allows developers to create web routes that eventually lead to the development of entire websites. Web routes, also known as endpoints, are the addresses we ask a server to retrieve data from. Based on the endpoint, our Flask application performs a particular task such as returning summary statitics about the credit card data. Additionally, our application allows clients to submit jobs to a queue. Through a back-end worker, jobs pushed onto the queue are popped off and executed in the order they are submitted. This allows multiple users to request jobs from the worker, and in order, the back end worker completes the task at and and stores the result into a database that the client can retrieve the completed job (in this case a graph) from. 
 
 This functionailty is then all containerized in a Docker container, which is essentially packaged software that runs agnostically in any environment. Regardless of the operating system executing the application or the version of a library installed on an individual’s system, containers allow for platform-agnostic and reproducible results. So once the image of the web service is created and published onto a Docker Image Web Hosting service such as DockerHub, anyone can pull the image and run the Docker Container to run the application as intended. Lastly, we integrated Kubernetes as our container orchestrator to manage and scale our Docker containers effectively. Kubernetes, often abbreviated as K8s, is an open-source platform designed to automate deploying, scaling, and operating application containers. It abstracts away the underlying infrastructure complexities, allowing developers to focus on building and deploying their applications without worrying about the operational overhead. With Kubernetes, we can define desired states for our containerized applications, such as how many instances should be running, and Kubernetes takes care of ensuring that the desired state is maintained, even in the face of failures or fluctuations in demand. Additionally, Kubernetes offers features like load balancing, service discovery, and self-healing capabilities, which further enhance the reliability and scalability of our microservice architecture. By leveraging Kubernetes as our container orchestrator, we can efficiently manage our Docker containers across a cluster of machines, ensuring high availability, fault tolerance, and seamless scaling as our application grows
 
 ### Software Diagram
 
-The following software diagram captures the primary components and workflow of our system. The diagram illustrates how data is queried from Kaggle and stored in a Redis Database that is presisited via frequenct saving to the local system harddrive. Moreover, the diagram depicts the user's interaction with various routes via the Web Application, facilitating data access and job request submissions processed by the `Worker`. This entire process is encapsulated and deployed within a Docker container, seamlessly orchestrated by a Kubernetes cluster for enhanced scalability and efficient resource utilization.
+The following software diagram captures the primary components and workflow of our system. The diagram illustrates how data is queried from Kaggle and stored in a Redis Database that is presisited via frequent saving to the local system hardrive. Moreover, the diagram depicts the user's interaction with various routes via the Web Application, facilitating data access and job request submissions processed by the `Worker`. Additionally, the diagram illustrates how different databases are used for presisting the raw credit card data, the job queue, the client's submitted job information, and lastly a database for the job results. This entire process is encapsulated and deployed within a Docker container, seamlessly orchestrated by a Kubernetes cluster for enhanced scalability and efficient resource utilization.
 
-<img src="C:/Users/arlo/Desktop/codetest/Final/img/softwareDiagram.png" alt="Alt text"  />
+<img src="img/softwareDiagram.png" alt="Alt text"  />
 
-#### API Routes
+### API Routes
+
+Our application offers the client <X> different routes to query the Flask Server. Once the application is running, clients may utilize curl commands to access information about the credit card data. 
 To execute a curl command, the following command format is followed: `curl -X <HTTP method> http://<ipaddress>:port/route`
 
-For example, for the user to extract thh data from Kaggle and presist it into the Redis Database, the following `curl` is executed.
+
+
+
+
+
+
+
+
+
+For example, for the user to extract data from Kaggle and presist it into the Redis Database, the following `curl` is executed.
 
 -  `curl -X POST localhost:5173/data`
 
-Once the data is posted to the database, the client can query other endpoints that require the data to be avalible. For example, the command, `curl localhost:5173/transaction_data_view` provides a quick look at the dataset by returning the first five entries. If the user wishes to see n records offset by some number, they may specify a limit and offset query parameter, otherwise, the first five entries are returned via: `curl localhost:5173/transaction_data_view`. This will return:
+Once the data is posted to the database, the client can query other endpoints that require the data to be avalaible. For example, the command, `curl localhost:5173/transaction_data_view` provides a quick look at the dataset by returning the first five entries. If the user wishes to see n records offset by some number, they may specify a limit and offset query parameter, otherwise, the first five entries are returned via: `curl localhost:5173/transaction_data_view`. This will return:
 
-     ```shell
+```shell
       [
        {
          "amt": 10.37,
@@ -90,10 +102,11 @@ Once the data is posted to the database, the client can query other endpoints th
          "zip": 16858
        }
      ]
-     ```
+```
+TODO - DISCUSS MORE ROUTES HERE. ML for example
 
-
-12. **Generate Graph for Feature Endpoint**
+An aspect of our application is providing clients with the ability to submit jobs. In this context, a job is a long running task that the client requests. Requets are processed via a queue, so the backend of our application serves teh clients one at a time. 
+**Generate Graph for Feature Endpoint**
 
     - **Description**: This endpoint initializes a job based on the user's input in JSON format, specifically their graph feature preferences. The job is then queued for processing, allowing the worker to generate a PNG plot. Once generated, the plot can be downloaded and viewed by the user. 
 
@@ -128,7 +141,7 @@ Once the data is posted to the database, the client can query other endpoints th
       }
       ```
 
-14. **Retrieve Graph Image from Submitted Job**
+**Retrieve Graph Image from Submitted Job**
 
     - **Description**: This endpoint returns a png file download of the graphs requested from the user based on the independent variable submitted in the job request. 
 
@@ -138,16 +151,16 @@ Once the data is posted to the database, the client can query other endpoints th
 
     - *expected output*
 
-      <img src="C:/Users/arlo/Desktop/codetest/Final/img/trans_month.png" alt="Alt text"  />
+      <img src="/img/trans_month.png" alt="Alt text"  />
 
-      <img src="C:/Users/arlo/Desktop/codetest/Final/img/trans_week.png" alt="Alt text"  />
+      <img src="/img/trans_week.png" alt="Alt text"  />
 
-      <img src="C:/Users/arlo/Desktop/codetest/Final/img/trans_category.png" alt="Alt text"  />
+      <img src="/img/trans_category.png" alt="Alt text"  />
 
-      <img src="C:/Users/arlo/Desktop/codetest/Final/img/gender.png" alt="Alt text"  />
+      <img src="/img/gender.png" alt="Alt text"  />
 
 
-15. **Informational Help Endpoint**
+**Informational Help Endpoint**
 
     - **Description**: This endpoint returns a description of all of the routes as well as an example curl command.  
 
@@ -228,7 +241,7 @@ In our Credit Card Fraud Prediction project, adhering to stringent ethical and p
 
 Through these measures, we are committed to developing a technologically advanced fraud detection tool while ensuring responsible operation ethically and professionally, gaining user trust and safeguarding their rights.
 
-### 8. Connection to Software Design Principles
+### Connection to Software Design Principles
 
 Our REST API project for interacting with a Credit Card Fraud dataset connects with several core software design principles.
 
@@ -252,7 +265,7 @@ Our REST API project for interacting with a Credit Card Fraud dataset connects w
 
 - By containerizing the application using Docker and deploying it on a Kubernetes cluster, our project ensures that it can be easily moved and executed in different environments, enhancing its portability. The consistent environment provided by containers also aids in achieving reproducible results, as the same configurations and dependencies are maintained across different deployments.
 
-### 9. Reference
+### References
 
 1. Bing Maps Locations API, https://learn.microsoft.com/en-us/bingmaps/rest-services/locations/?redirectedfrom=MSDN
 2. Kaggle dataset,  https://www.kaggle.com/datasets/kelvinkelue/credit-card-fraud-prediction**
