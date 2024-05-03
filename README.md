@@ -2,13 +2,9 @@
 
 ### Team Members: Reem Fashho, Owen Scott, Yi Yang
 
-**_Due Date: Friday, May 3, by 1:00 PM Central Time_**
-
-https://coe-332-sp24.readthedocs.io/en/latest/homework/final.html
-
 ### Project Description
 
-Our project focuses on leveraging the Credit Card Fraud Prediction Dataset available on Kaggle to create a robust containerized web application. This application will utilize databases for efficient data storage and management, enabling user querying and facilitating job queues. By employing Flask, we will develop API endpoints that provide users with access to comprehensive summary statistics and plots derived from the Credit Card Fraud dataset. More importantly, considering the widespread utilization of this dataset for machine learning-based fraud detection, we aim to design our application to accept credit card input for predicting potential fraud from a pre-trained model we develop. This will allow users to submit a job, and retrieve a prediction about whether the particular credit card attributes are likely fraudulent.
+Our project focuses on leveraging the Credit Card Fraud Prediction Dataset available on Kaggle to create a robust containerized web application. This application will utilize databases for efficient data storage and management, enabling user querying and facilitating job queues. By employing Flask, we will develop API endpoints that provide users with access to comprehensive summary statistics and plots derived from the Credit Card Fraud dataset. More importantly, considering the widespread utilization of this dataset for machine learning-based fraud detection, we aim to design our application to accept credit card transaction input for predicting potential fraud from a pre-trained model we develop. This will allow users to submit a job, and retrieve a prediction about whether the particular credit card attributes are likely fraudulent.
 
 ### Project Importance
 
@@ -35,35 +31,57 @@ The following software diagram captures the primary components and workflow of o
 
 ### Description of Folder Contents
 
-- `Dockerfile`: Contains instructions for building a Docker image of our program
-- `docker-compose.yaml`: YAML file used to replace running the `docker build` and `docker run` commands for deploying a container. Orchestrates 3 services together: Redis Database, Flask App, Worker.
+- `Dockerfile_api`: Contains instructions for building a Docker image of the API container
+- `Dockerfile_test`: Contains instructions for building a Docker image that runs all of the tests
+- `Dockerfile_worker`: Contains instructions for building a Docker image of the worker
+- `docker-compose.yml`: docker-compose file used to spin up the whole project including the Redis database, Flask API, and worker container. It utilizes the Dockerfile_api and Dockerfile_worker files. Simply do `docker-compose up` to start the project.
+- `docker-compose.test.yml`: docker-compose file used to run the tests, simply do `docker-compose -f docker-compose.test.yml up`
 - `src/api.py`: Main Python script that interacts with our fraud data set, hosts the Flask app that allows the user to query for information, as well as interacts with the Redis database.
-  - [GET] `/transaction_data`: Returns all data from Redis
-  - [POST] `/transaction_data`: Puts data into Redis
-  - [DELETE] `/transaction_data`: Deletes data in Redis
-  - [GET] `/transaction_data_view?limit=<int>&offset=<int>`: Returns a slice view of the data, beginning at the offset parameter (which defaults to zero) and ending at (offset + limit). limit parameter defaults to 5.
-  - [GET] `/amt_analysis`: Returns statistical descriptions of the transaction amounts in the dataset.
-  - [GET] `/amt_fraud_correlation`: Returns the correlation between transaction amount ('amt') and fraud status ('is_fraud')
-  - [GET] `/jobs/<jobid>` : Returns all job information for a given JOB ID
-  - [GET] `/jobs`: Returns all existing JOB IDs
-  - [POST] `/jobs`: Creates a new job with a unique identifier (uuid)
-    - The `/jobs` POST request must include a data packet in JSON format which is stored along with the job information. For our application, the client must provide the following JSON formatted data:
-      '{"graph_feature": "gender"}' -H "Content-Type: application/json"
-  - [DELETE] `/jobs`: Deletes all jobs
-  - [GET] `/results/<jobid>`: Return requested job result in the form of a JSON dictionary. If the job has not yet been finished, the api returns a message indicating so.
-- `src/worker.py`: Pull jobs off of the queue and executes job functionality.
-- `src/ml/random_forest_model.py`: Implements a Random-Forest Classifier to detect fraud with a high accuracy of 99%, leveraging feature importance analysis to enhance predictive insights.
-- `src/ml/nn_ml_model.py`: Implements a nn Classifier to detect fraud with a high accuracy of 99.5%.
-- `requirements.txt`: Text file that lists all of the Python non-standard libraries used to develop the code.
-- `data/`: Local Directory for Redis container to presist data to file system across container executions.
-- `src/test_api.py`: Tests functionality in `src/api.py`
-- `src/test_worker.py`: Tests functionailty in `src/worker.py`
+  - [GET] `/transaction_data`: Returns all data from Redis as an array of JSON transaction objects.
+  - [POST] `/transaction_data`: Puts data into Redis.
+  - [DELETE] `/transaction_data`: Deletes data in Redis.
+  - [GET] `/transaction_data_view?limit=<int>&offset=<int>`: Returns a slice view of the data, beginning at the offset parameter (which defaults to zero) and ending at (offset + limit). limit parameter defaults to 5. Format is an array of JSON transaction objects.
+  - [GET] `/amt_analysis`: Returns statistical descriptions of the transaction amounts in the dataset in JSON.
+  - [GET] `/amt_fraud_correlation`: Returns the correlation between transaction amount ('amt') and fraud status ('is_fraud') in JSON.
+  - [GET] `/fraudulent_zipcode_info`: Returns JSON describing the zipcode with the most fraud, how much fraud there was, the lat/lon of this zipcode, and a google maps link to it.
+  - [GET] `/fraud_by_state`: Returns JSON dictionary with two-letter state abbreviations as the keys and the fraud counts as values. Omitted states had no occurrences of fraud.
+  - [GET] `/jobs/<jobid>` : Returns all job information for a given JOB ID as JSON, including the arguments the job was POSTed with and the jobs current status in the 'status' key, e.g. {"graph_feature": "gender", "status": "queued"}
+  - [GET] `/jobs`: Returns all existing JOB IDs as a JSON array of Strings.
+  - [POST] `/jobs`: Creates a new job with a unique identifier (uuid). For our application, the client must provide a JSON body specifiying either a graph_feature they'd like analyzed (which can be any of 'trans_month', 'trans_dayOfWeek', 'gender', 'category') e.g. {'graph_feature': 'gender'} OR a list of transactions they'd like a ML model's analysis of with the following data included in each transaction object: 'trans_date_trans_time': String, 'merchant': String, 'category': String, 'amt': number, 'lat': number, 'long': number, 'job': String, 'merch_lat': number, 'merch_long': number. Note: the number-typed data must be floating point numbers. An example JSON body would look like {'transactions': [{"trans_date_trans_time": "01/02/2024 12:34".......}]}. An example job result would look like [\0.0], or [\1.0] if the transaction was inferred to be fraudulent. The returned JSON is in the format {"job_id": "anexamplejobid1234"}
+  - [DELETE] `/jobs`: Clears all jobs.
+  - [GET] `/results/<jobid>`: Return requested job result either as a file download for graph_feature jobs or a JSON array for transactions jobs. If the job has not yet been finished, this results in a 400 Bad request.
+- `src/worker.py`: Pull jobs off of the queue, attempts them, and stores their results and updated states in Redis.
+- `src/services.py`: Provides convenient functionalities used by both api.py and worker.py. This includes things like initializing Redis and HotQueue, reading environment variables, validating inputs, and quickly reading data out of Redis.
+- `src/ml/input_vectorization.py`: Includes functionalities for making a test/validate/train split and parsing and encoding training and evaluation data.
+- `src/ml/ml_model.py`: Implements a nn BinaryClassifier to detect fraud. This model is optimized for accuracy and was trained with a loss function that weighted the classes equally. If you would like to detect more true positives and have fewer false negatives, at the expense of having _significantly_ more false positives, you can re-train the model with a higher weighting on the fraudulent class. Current performance metrics for the model are as follows:
+  True positives: 91
+  True negatives: 55320
+  False positives: 54
+  False negatives: 107
+  Accuracy: 0.997102857554164
+  Precision: 0.6275862068965518
+  Recall: 0.4595959595959596
+  F1: 0.5306122448979592
+  AUROC: 0.7293103863425675
+- `src/ml/binaryclassifierstate.pt`: The state of the pre-trained BinaryClassifier. This is the state the model is in when worker.py uses it for inferences.
+- `src/ml/meanandstd.txt`: Stored copies of the mean and std tensors across the dataset. These are used to normalize any input vectors provided for inferences.
+- `src/ml/categories.txt`, `src/ml/jobs.txt`, `src/ml/merchants.txt`: Stored sorted copies of lists of payment categories, jobs, and merchants that occur in the dataset. There are no duplicate entries. These files are read in as lists and used for onehot encoding in the inference process.
+- `requirements_api.txt`: Text file listing all of the external Python library requirements used by the API service.
+- `requirements_worker.txt`: Text file listing all of the external Python library requirements used by the Worker service. These are separate to minimize container size.
+- `kubernetes/`: Directory for the Kubernetes configuration files.
+- `redis-data/`: Directory for Redis container to presist data to file system across container executions.
+- `test/test_api.py`: Exhaustively tests functionality in `src/api.py`
+- `test/test_services.py`: Exhaustively tests functionality in `src/services.py`
+- `test/test_worker.py`: Tests functionailty in `src/worker.py`
 
-Note: All throughout the code source, strategic logging is implemented to alert the developer of important events and bugs that arise. Logs are stored in `logger.log`
-
-To view the logger for each container, execute the following: `docker exec -it <container_id> bash`. `logger.log` is found in `/app`. Logs concerning the `worker` container are found by executing the command for the `worker` container id. Get the container id by running: `docker ps -a`.
+Note: All throughout the code source, strategic logging is implemented to alert the developer of important events and bugs that arise. Logs are printed to the console.
 
 ### Flask Application
+
+#### Instructions for running the tests
+
+Simply run `docker-compose -f docker-compose.test.yml up`
+This will spin up a test container with all of the code and dependencies and will run pytest against all test files. The container will exit when tests are complete.
 
 #### Instructions on How to Deploy Containerized Code with docker-compose
 
@@ -116,7 +134,6 @@ While the service is up (after executing `docker-compose up`), you may curl the 
 
      ```shell
      {
-         "Unnamed: 0": 283599,
          "amt": 55.49,
          "category": "entertainment",
          "cc_num": 4428150000000000.0,
@@ -142,7 +159,6 @@ While the service is up (after executing `docker-compose up`), you may curl the 
        },
        ...
        {
-         "Unnamed: 0": 12259,
          "amt": 1.45,
          "category": "misc_net",
          "cc_num": 4.50254e+18,
@@ -324,7 +340,7 @@ While the service is up (after executing `docker-compose up`), you may curl the 
        "most_fraudulent_zipcode": "67020"
      }
      ```
-     
+
      <img src="img/googlemap_location.png" alt="Alt text"  />
 
 8. **Fraud by State Endpoint**
@@ -341,45 +357,41 @@ While the service is up (after executing `docker-compose up`), you may curl the 
 
      ```python
      {
-       "fraud_counts_by_state": {
-         "AK": 14,
-         "AL": 63,
-         "AR": 34,
-         "AZ": 27,
-         "CA": 76,
-         ...
-         "TN": 19,
-         "TX": 113,
-         "VA": 75,
-         "WA": 30,
-         "WI": 65,
-         "WY": 9
-       }
+       "AK": 14,
+       "AL": 63,
+       "AR": 34,
+       "AZ": 27,
+       "CA": 76,
+       ...
+       "TN": 19,
+       "TX": 113,
+       "VA": 75,
+       "WA": 30,
+       "WI": 65,
+       "WY": 9
      }
      ```
 
-   
+9. **Retrieve All Existing Jobs Endpoint**
 
-10. **Retrieve All Existing Jobs Endpoint**
+   - **Description**: This endpoint returns all of the existing job uuids from the database.
 
-    - **Description**: This endpoint returns all of the existing job uuids from the database. 
+     ```shell
+     curl localhost:5173/jobs
+     ```
 
-      ```shell
-      curl localhost:5173/jobs
-      ```
+   - _expected output_
 
-    - _expected output_
+     ```shell
+     [af7c1fe6-d669-414e-b066-e9733f0de7a8, 08c71152-c552-42e7-b094-f510ff44e9cb]
+     ```
 
-      ```shell
-      [af7c1fe6-d669-414e-b066-e9733f0de7a8, 08c71152-c552-42e7-b094-f510ff44e9cb]
-      ```
+10. **Clear Jobs Endpoint**
 
-11. **Clear Jobs Endpoint**
-
-    - **Description**: This endpoint clears all jobs from the jobs database. 
+    - **Description**: This endpoint clears all jobs from the jobs database.
 
       ```shell
-      curl -X DELETE localhost:5173/jobs 
+      curl -X DELETE localhost:5173/jobs
       ```
 
     - _expected output_
@@ -388,11 +400,11 @@ While the service is up (after executing `docker-compose up`), you may curl the 
       OK
       ```
 
-12. **Generate Graph for Feature Endpoint**
+11. **Generate Graph for Feature Endpoint**
 
-    - **Description**: This endpoint initializes a job based on the user's input in JSON format, specifically their graph feature preferences. The job is then queued for processing, allowing the worker to generate a PNG plot. Once generated, the plot can be downloaded and viewed by the user. 
+    - **Description**: This endpoint initializes a job based on the user's input in JSON format, specifically their graph feature preferences. The job is then queued for processing, allowing the worker to generate a PNG plot. Once generated, the plot can be downloaded and viewed by the user.
 
-      Based on what information the user desires to analyze, they may submit one of the following graph features which will be utilized as the independent variable of the generated graph. If the user fails to submit a feature from the feature options listed below or submits the `curl` command incorrectly, a respective error message with intructions to correct the `POST` request will be generated. 
+      Based on what information the user desires to analyze, they may submit one of the following graph features which will be utilized as the independent variable of the generated graph. If the user fails to submit a feature from the feature options listed below or submits the `curl` command incorrectly, a respective error message with intructions to correct the `POST` request will be generated.
 
       Feature Options for Graphing: ['trans_month','trans_dayOfWeek','gender','category']
 
@@ -405,10 +417,14 @@ While the service is up (after executing `docker-compose up`), you may curl the 
       ```shell
       {"job_id": "af7c1fe6-d669-414e-b066-e9733f0de7a8"}
       ```
-    
+
+12. **Generate AI Inferences on Transactions**
+
+    - **Description**: This endpint initializes a job based on the user's input in JSON format, specifically their 'transactions' JSON object array. The job is then queued for processing, allowing the worker to load up the model and do calculations to make inferences. Once complete, the inferences are available at the `/results/<job_id>` endpoint. Invalid curls or POST requests with invalid args will generate corresponding error messages. Just like the other kind of POST to `/jobs`, the endpiont will return a JSON-formatted object with the job id, e.g. `{"job_id": "af7c1fe6-d669-414e-b066-e9733f0de7a8"}`
+
 13. **Retrieve Job Status Endpoint**
 
-    - **Description**: This endpoint provides details about a specified job ID, facilitating users in querying the status of submitted jobs and recalling the feature intended for plotting. 
+    - **Description**: This endpoint provides details about a specified job ID, facilitating users in querying the status of submitted jobs and recalling the feature intended for plotting or transasctions intended for inference.
 
       ```shell
       curl http://127.0.0.1:5173/jobs/ af7c1fe6-d669-414e-b066-e9733f0de7a8
@@ -422,16 +438,16 @@ While the service is up (after executing `docker-compose up`), you may curl the 
         'graph_feature': 'gender',
       }
       ```
-    
-14. **Retrieve Graph Image from Submitted Job**
 
-    - **Description**: This endpoint returns a png file download of the graphs requested from the user based on the independent variable submitted in the job request. 
+14. **Retrieve Result from Submitted Job**
+
+    - **Description**: This endpoint returns a JSON array of inferences or png file download of the graphs requested from the user based on the job type and independent variable submitted in the job request.
 
       ```shell
       curl http://127.0.0.1:5173/results/af7c1fe6-d669-414e-b066-e9733f0de7a8
       ```
 
-    - *expected output*
+    - _expected output_
 
       <img src="img/trans_month.png" alt="Alt text"  />
 
@@ -441,75 +457,67 @@ While the service is up (after executing `docker-compose up`), you may curl the 
 
       <img src="img/gender.png" alt="Alt text"  />
 
+      OR
+
+      `[0.0, 1.0, 0.0, 0.0, 0.0, 1.0]`
 
 15. **Informational Help Endpoint**
 
-    - **Description**: This endpoint returns a description of all of the routes as well as an example curl command.  
+    - **Description**: This endpoint returns a description of all of the routes as well as an example curl command.
 
       ```shell
       curl http://127.0.0.1:5173/help
       ```
-      
+
     - _expected output_
-    
+
       ```shell
         Description of all application routes:
         /transaction_data (GET): Returns all transaction data currently stored in Redis.
-          Example Command: curl http://127.0.0.1:5173/transaction_data
-      
+          Example Command: curl "localhost:5173/transaction_data"
+
         /transaction_data (POST): Fetches transaction data from Kaggle or disk and stores it in Redis.
-          Example Command: curl -X POST localhost:5173/transaction_data
-      
+          Example Command: curl -X POST "localhost:5173/transaction_data"
+
         /transaction_data (DELETE): Deletes all transaction data stored in Redis.
-          Example Command: curl -X DELETE localhost:5173/transaction_data
-      
+          Example Command: curl -X DELETE "localhost:5173/transaction_data"
+
         /transaction_data_view(GET): Returns a default slice of the transaction data stored in Redis (first 5 entries).
-          Example Command: curl localhost:5173/transaction_data_view
-      
+          Example Command: curl "localhost:5173/transaction_data_view"
+
         /transaction_data_view?limit=<int>&offset=<int> (GET): Returns a slice of the transaction data stored in Redis.
           Example Command: curl "localhost:5173/transaction_data_view?limit=2&offset=7"
-      
+
         /amt_analysis (GET): Returns statistical descriptions of the transaction amounts in the dataset.
           Example Command: curl "localhost:5173/amt_analysis"
-      
+
         /amt_fraud_correlation (GET): Returns the correlation between transaction amount and fraud status in the dataset.
           Example Command: curl "localhost:5173/amt_fraud_correlation"
-      
+
         /fraudulent_zipcode_info (GET): Returns the zipcode with the highest number of fraudulent transactions, and retrieves its geographic location.
           Example Command: curl "localhost:5173/fraudulent_zipcode_info"
-      
+
         /fraud_by_state (GET):  Returns the number of fraudulent transactions per state.
           Example Command: curl "localhost:5173/fraud_by_state"
-      
+
         /ai_analysis (GET): Returns the most important features and feature importances from the trained model.
           Example Command: curl "localhost:5173/ai_analysis"
-      
+
         /jobs (GET): Returns all job ids in the database.
           Example Command: curl "localhost:5173/jobs"
-      
+
         /jobs (DELETE): Clears all jobs from the jobs database.
           Example Command: curl -X DELETE "localhost:5173/jobs"
-      
+
         /jobs (POST): Creates a job for plotting a feature specified by the user.
-          Example Command: curl -X POST localhost:5173/jobs -d "{"graph_feature": "gender"}" -H "Content-Type: application/json"
-      
+          Example Command: curl -X POST "localhost:5173/jobs" -d "{"graph_feature": "gender"}" -H "Content-Type: application/json"
+
         /jobs/<id> (GET): Returns information about the specified job id.
-          Example Command: curl -X "localhost:5173/jobs/99e6820f-0e4f-4b55-8052-7845ea390a44"
-      
+          Example Command: curl "localhost:5173/jobs/99e6820f-0e4f-4b55-8052-7845ea390a44"
+
         /results/<id> (GET): Returns the job result as a image file download.
-          Example Command: curl -X "localhost:5173/results/99e6820f-0e4f-4b55-8052-7845ea390a44"
+          Example Command: curl "localhost:5173/results/99e6820f-0e4f-4b55-8052-7845ea390a44"
       ```
-#### Instructions on How to Run Test Cases
-
-Unit tests for the application are stored in the `/tests` directory and copied over to the `app` directory in the container (alongside the main scripts). To execute the test scripts, enter into the respective container interactively and execute `pytest`.
-
-Example: Run the following commands
-
-```shell
-docker exec -it <container_id> bash
-ls # Check that the test scripts are in the `/app` directory
-pytest # Run pytest
-```
 
 #### Instructions to Stop Microservice
 

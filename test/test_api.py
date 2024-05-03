@@ -10,7 +10,6 @@ from werkzeug.exceptions import HTTPException
 import zipfile
 
 example_dataframe = pd.DataFrame({
-    'Unnamed: 0': [0],
     'trans_date_trans_time': ['21/06/2020 12:14'],
     'cc_num': [2.29116E+15],
     'merchant': ['fraud_Kirlin and Sons'],
@@ -34,7 +33,7 @@ example_dataframe = pd.DataFrame({
     'merch_long': [-81.200714],
     'is_fraud': [0],
   })
-example_dataframe_byte_string = b'{"Unnamed: 0":0,"trans_date_trans_time":"21/06/2020 12:14","cc_num":2291160000000000.0,"merchant":"fraud_Kirlin and Sons","category":"personal_care","amt":2.86,"first":"Jeff","last":"Elliott","gender":"M","street":"351 Darlene Green","city":"Columbia","state":"SC","zip":29209,"lat":33.9659,"long":-80.9355,"city_pop":333497,"job":"Mechanical engineer","dob":"19/03/1968","trans_num":"2da90c7d74bd46a0caf3777415b3ebd3","unix_time":1371816865,"merch_lat":33.986391,"merch_long":-81.200714,"is_fraud":0}'
+example_dataframe_byte_string = b'{"trans_date_trans_time":"21/06/2020 12:14","cc_num":2291160000000000.0,"merchant":"fraud_Kirlin and Sons","category":"personal_care","amt":2.86,"first":"Jeff","last":"Elliott","gender":"M","street":"351 Darlene Green","city":"Columbia","state":"SC","zip":29209,"lat":33.9659,"long":-80.9355,"city_pop":333497,"job":"Mechanical engineer","dob":"19/03/1968","trans_num":"2da90c7d74bd46a0caf3777415b3ebd3","unix_time":1371816865,"merch_lat":33.986391,"merch_long":-81.200714,"is_fraud":0}'
 
 @patch('api.pipeline_data_out_of_redis')
 @patch('api.get_redis')
@@ -164,8 +163,10 @@ def test_attempt_read_transaction_data_from_disk_fails_with_bad_env(bad_env):
   }, clear=True)
 @patch('pandas.read_csv')
 def test_attempt_read_transaction_data_from_disk_succeeds_with_good_env(mock_read_csv):
-  mock_read_csv.return_value = 'a fake df'
-  assert api._attempt_read_transaction_data_from_disk() == 'a fake df'
+  mock_df = Mock()
+  mock_df.drop.return_value = mock_df
+  mock_read_csv.return_value = mock_df
+  assert api._attempt_read_transaction_data_from_disk() == mock_df
   mock_read_csv.assert_called_once_with('a file.csv', sep=',')
 
 @patch('api.abort', side_effect=Exception)

@@ -101,7 +101,7 @@ def _attempt_fetch_transaction_data_from_kaggle() -> Optional[pd.DataFrame]:
             return None
         filepath_or_data = BytesIO(extracted_files[kaggle_vars[2]])
         logging.debug('CSV data pulled into memory from Kaggle.')
-        df = pd.read_csv(filepath_or_data, sep=',')
+        df = pd.read_csv(filepath_or_data, sep=',').drop('Unnamed: 0', axis=1)
         logging.debug('Pandas DataFrame generated.')
         return df
     except Exception as e:
@@ -125,7 +125,7 @@ def _attempt_read_transaction_data_from_disk() -> Optional[pd.DataFrame]:
             logging.error('No valid path to the dataset specified by env var FALLBACK_DATASET_PATH')
             return None
         logging.debug('Dataset fallback path identified, attempting to read in the data...')
-        df = pd.read_csv(dataset_path, sep=',')
+        df = pd.read_csv(dataset_path, sep=',').drop('Unnamed: 0', axis=1)
         logging.debug('Pandas DataFrame generated.')
         return df
     except Exception as e:
