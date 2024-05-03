@@ -17,6 +17,6 @@ spec:
     spec:
       containers:
         - name: worker
-          imagePullPolicty: Always
+          imagePullPolicy: Always
           image: username/image-name:tag
           command: ["python worker.py"]
