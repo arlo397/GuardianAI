@@ -19,6 +19,11 @@ The dataset "Credit Card Fraud Prediction" is designed to evaluate and compare v
 
 This dataset is a rich resource that fosters the development, testing, and comparison of different fraud detection techniques. It is a valuable tool for researchers and practitioners dedicated to advancing the field of fraud detection through innovative modeling and analysis.
 
+### Background Information
+
+- **Flask** is a lightweight web application framework written in Python. It is designed to make it easy to set up web servers for your applications with minimal setup and coding. Flask provides you with the tools, libraries, and technologies needed to build a web application. This framework is highly flexible and supports extensions that can add application features as if they were implemented in Flask itself. Its simplicity and scalability make it ideal for starting with a simple web service and growing it into a complex web application.
+- **Docker** is a platform that allows developers to package applications into containers—standardized executable components combining application source code with the operating system (OS) libraries and dependencies required to run that code in any environment. Docker simplifies the configuration, programming, and operations processes and makes it easier to build, deploy, and run applications using containers. Containers make it possible for developers to ensure consistency across multiple development and release cycles, standardizing environments across the entire pipeline from development to production. Docker's approach to containerization allows applications to be more easily managed, scaled, and deployed.
+
 ### Application Architecture
 
 The simplest way to define the goal of our microservice is to offer clients a means to query and make predictions about credit card fraud data. To achieve this, our microservice retrieves data hosted on Kaggle and presists it into a Redis Database. This data is then used as the source for analyses triggered by clients submitting HTTP requests. To achieve this, we used Flask, which is a web framework that allows developers to create web routes that eventually lead to the development of entire websites. Web routes, also known as endpoints, are the addresses we ask a server to retrieve data from. Based on the endpoint, our Flask application performs a particular task such as returning summary statitics about the credit card data. Additionally, our application allows clients to submit jobs to a queue. Through a back-end worker, jobs pushed onto the queue are popped off and executed in the order they are submitted. This allows multiple users to request jobs from the worker, and in order, the back end worker completes the task at and and stores the result into a database that the client can retrieve the completed job (in this case a graph) from. 
@@ -109,17 +114,17 @@ An aspect of our application is providing clients with the ability to submit job
 **Generate Graph for Feature Endpoint**
 
     - **Description**: This endpoint initializes a job based on the user's input in JSON format, specifically their graph feature preferences. The job is then queued for processing, allowing the worker to generate a PNG plot. Once generated, the plot can be downloaded and viewed by the user. 
-
+    
       Based on what information the user desires to analyze, they may submit one of the following graph features which will be utilized as the independent variable of the generated graph. If the user fails to submit a feature from the feature options listed below or submits the `curl` command incorrectly, a respective error message with intructions to correct the `POST` request will be generated. 
-
+    
       Feature Options for Graphing: ['trans_month','trans_dayOfWeek','gender','category']
-
+    
       ```shell
       curl -X POST localhost:5173/jobs -d '{"graph_feature": "gender"}' -H "Content-Type: application/json"
       ```
-
+    
     - _expected output_
-
+    
       ```shell
       {"job_id": "af7c1fe6-d669-414e-b066-e9733f0de7a8"}
       ```
@@ -144,32 +149,32 @@ An aspect of our application is providing clients with the ability to submit job
 **Retrieve Graph Image from Submitted Job**
 
     - **Description**: This endpoint returns a png file download of the graphs requested from the user based on the independent variable submitted in the job request. 
-
+    
       ```shell
       curl http://127.0.0.1:5173/results/af7c1fe6-d669-414e-b066-e9733f0de7a8
       ```
-
+    
     - *expected output*
-
+    
       <img src="/img/trans_month.png" alt="Alt text"  />
-
+    
       <img src="/img/trans_week.png" alt="Alt text"  />
-
+    
       <img src="/img/trans_category.png" alt="Alt text"  />
-
+    
       <img src="/img/gender.png" alt="Alt text"  />
 
 
 **Informational Help Endpoint**
 
     - **Description**: This endpoint returns a description of all of the routes as well as an example curl command.  
-
+    
       ```shell
       curl http://127.0.0.1:5173/help
       ```
-
+    
     - _expected output_
-
+    
       ```shell
         Description of all application routes:
         /transaction_data (GET): Returns all transaction data currently stored in Redis.
