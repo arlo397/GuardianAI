@@ -475,49 +475,83 @@ While the service is up (after executing `docker-compose up`), you may curl the 
         Description of all application routes:
         /transaction_data (GET): Returns all transaction data currently stored in Redis.
           Example Command: curl "localhost:5173/transaction_data"
-
+      
         /transaction_data (POST): Fetches transaction data from Kaggle or disk and stores it in Redis.
           Example Command: curl -X POST "localhost:5173/transaction_data"
-
+      
         /transaction_data (DELETE): Deletes all transaction data stored in Redis.
           Example Command: curl -X DELETE "localhost:5173/transaction_data"
-
+      
         /transaction_data_view(GET): Returns a default slice of the transaction data stored in Redis (first 5 entries).
           Example Command: curl "localhost:5173/transaction_data_view"
-
+      
         /transaction_data_view?limit=<int>&offset=<int> (GET): Returns a slice of the transaction data stored in Redis.
           Example Command: curl "localhost:5173/transaction_data_view?limit=2&offset=7"
-
+      
         /amt_analysis (GET): Returns statistical descriptions of the transaction amounts in the dataset.
           Example Command: curl "localhost:5173/amt_analysis"
-
+      
         /amt_fraud_correlation (GET): Returns the correlation between transaction amount and fraud status in the dataset.
           Example Command: curl "localhost:5173/amt_fraud_correlation"
-
+      
         /fraudulent_zipcode_info (GET): Returns the zipcode with the highest number of fraudulent transactions, and retrieves its geographic location.
           Example Command: curl "localhost:5173/fraudulent_zipcode_info"
-
+      
         /fraud_by_state (GET):  Returns the number of fraudulent transactions per state.
           Example Command: curl "localhost:5173/fraud_by_state"
-
+      
         /ai_analysis (GET): Returns the most important features and feature importances from the trained model.
           Example Command: curl "localhost:5173/ai_analysis"
-
+      
         /jobs (GET): Returns all job ids in the database.
           Example Command: curl "localhost:5173/jobs"
-
+      
         /jobs (DELETE): Clears all jobs from the jobs database.
           Example Command: curl -X DELETE "localhost:5173/jobs"
-
+      
         /jobs (POST): Creates a job for plotting a feature specified by the user.
           Example Command: curl -X POST "localhost:5173/jobs" -d "{"graph_feature": "gender"}" -H "Content-Type: application/json"
-
+      
         /jobs/<id> (GET): Returns information about the specified job id.
           Example Command: curl "localhost:5173/jobs/99e6820f-0e4f-4b55-8052-7845ea390a44"
-
+      
         /results/<id> (GET): Returns the job result as a image file download.
           Example Command: curl "localhost:5173/results/99e6820f-0e4f-4b55-8052-7845ea390a44"
       ```
+
+### **Kubernetes**
+
+- **app-test-deployment-flask.yml**
+
+  This file defines a Kubernetes deployment configuration for managing a test instance of our Flask application. The deployment specifies a single replica (replicas: 1) running our application within an Ubuntu 22.04 container. The Flask app is initiated by executing the python api.py command, ensuring it runs in an isolated environment within the Kubernetes cluster tailored for testing. This setup is exclusively for the test environment, providing a controlled setting that allows developers to perform thorough testing and verification of the application's functionality before it is deployed to production.
+
+- **app-test-deployment-redis.yml**
+
+  This file defines a Kubernetes deployment configuration for managing a test instance of Redis in our environment. The deployment specifies a single replica (replicas: 1) running Redis on an Ubuntu 22.04 container. This setup is specifically for the test environment, enabling developers to conduct comprehensive functional tests and validations of the Redis instance within an isolated Kubernetes cluster setting before deployment to production.
+
+- **app-test-deployment-worker.yml**
+
+  This file defines a Kubernetes deployment configuration for managing a test instance of our background worker in the environment. The worker is initiated by executing the python worker.py command, ensuring it operates within an isolated environment in the Kubernetes cluster.
+
+- **app-test-ingress-flask.yml**
+
+  This configuration file defines a Kubernetes Ingress resource that manages access to the Flask application within the test environment. The Ingress is set up with Nginx as the ingress class and allows access through the specified hostname username-flask.coe332.tacc.cloud without SSL redirection. It details a routing rule where all traffic to the root path (/) is directed to the flask-api-nodeport-service-test service on port 5173. This setup facilitates easy access to the Flask application for external users during development and testing, without the need for complex networking configurations.
+
+- **app-test-pvc-redis.yml**
+
+  This configuration file sets up a Kubernetes deployment for a Redis instance in the test environment, integrating a Persistent Volume Claim (PVC) for data persistence. The deployment ensures that Redis runs with the ubuntu:22.04 image as a single replica. Notably, it configures a volume named redis-<username>-data, mounted at /data, which utilizes the PVC redis-<username>-data to persist data. This arrangement guarantees data retention across container restarts, making it ideal for testing scenarios that require data persistence.
+
+- **app-test-service-flask.yml**
+
+  This file defines a Kubernetes Service that exposes the Flask API in the test environment through a ClusterIP service. The service uses the label selector app: flask-api to target the corresponding Pods, routing traffic to the Flask application on port 5173. This setup ensures that only other services within the cluster can access the Flask API, maintaining network security and isolation.
+
+- **app-test-service-nodeport-flask.yml**
+
+  This file defines a ClusterIP service as well, similar to the above. It exposes the Flask API on port 5173, ensuring that the service is accessible only within the Kubernetes cluster.
+
+- **app-test-service-redis.yml**
+
+  This file defines a Kubernetes Service that exposes the Redis instance in the test environment using a ClusterIP service type. Utilizing the label selector app: redis to target the relevant Pods, the service is configured to route traffic on port 6379 to the Redis instance. The ClusterIP configuration ensures that the service is only accessible internally within the cluster, ideal for protected backend services such as databases.
 
 #### Instructions to Stop Microservice
 
