@@ -505,31 +505,31 @@ def get_help():
             'description': 'Deletes all transaction data stored in Redis.',
             'example_curl': 'curl -X DELETE localhost:5173/transaction_data'
         },
-        '/transaction_data_view': {
+        '/transaction_data_view (GET)': {
             'description': 'Returns a default slice of the transaction data stored in Redis (first 5 entries).',
             'example_curl': 'curl localhost:5173/transaction_data_view'
         },
-         '/transaction_data_view?limit=<int>&offset=<int>': {
+         '/transaction_data_view?limit=<int>&offset=<int> (GET)': {
             'description': 'Returns a slice of the transaction data stored in Redis.',
             'example_curl': 'curl "localhost:5173/transaction_data_view?limit=2&offset=7"'
         },
-         '/amt_analysis': {
+         '/amt_analysis (GET)': {
             'description': 'Returns statistical descriptions of the transaction amounts in the dataset.',
             'example_curl': 'curl "localhost:5173/amt_analysis"'
         },
-        '/amt_fraud_correlation':{
+        '/amt_fraud_correlation (GET)':{
             'description': 'Returns the correlation between transaction amount and fraud status in the dataset.',
             'example_curl': 'curl "localhost:5173/amt_fraud_correlation"'
         }, 
-         '/fraudulent_zipcode_info':{
+         '/fraudulent_zipcode_info (GET)':{
             'description': 'Returns the zipcode with the highest number of fraudulent transactions, and retrieves its geographic location.',
             'example_curl': 'curl "localhost:5173/fraudulent_zipcode_info"'
         }, 
-         '/fraud_by_state':{
+         '/fraud_by_state (GET)':{
             'description': ' Returns the number of fraudulent transactions per state.',
             'example_curl': 'curl "localhost:5173/fraud_by_state"'
         }, 
-         '/ai_analysis':{
+         '/ai_analysis (GET)':{
             'description': 'Returns the most important features and feature importances from the trained model.',
             'example_curl': 'curl "localhost:5173/ai_analysis"'
         }, 
@@ -546,16 +546,16 @@ def get_help():
             'Graph Feature Parameters': ["gender", "trans_month", "trans_dayOfWeek", "category"],
             'example_curl': 'curl -X POST localhost:5173/jobs -d "{\"graph_feature\": \"gender\"}" -H "Content-Type: application/json"'
         },
-        '/jobs/<id>' :{
+        '/jobs/<id> (GET)' :{
             'description': 'Returns information about the specified job id.',
-            'example_curl': 'curl -X DELETE "localhost:5173/jobs/99e6820f-0e4f-4b55-8052-7845ea390a44"'
+            'example_curl': 'curl -X "localhost:5173/jobs/99e6820f-0e4f-4b55-8052-7845ea390a44"'
         },
-        '/results/<id>' :{
+        '/results/<id> (GET)' :{
             'description': ' Returns the job result as a image file download.',
-            'example_curl': 'curl -X DELETE "localhost:5173/results/99e6820f-0e4f-4b55-8052-7845ea390a44"'
+            'example_curl': 'curl -X "localhost:5173/results/99e6820f-0e4f-4b55-8052-7845ea390a44"'
         },
     }
-
+    
     output_string = 'Description of all application routes:\n'
     # Print each endpoint's information in a single line
     for endpoint, info in endpoints.items():
