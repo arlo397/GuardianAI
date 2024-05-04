@@ -18,5 +18,5 @@ spec:
       containers:
         - name: worker
           imagePullPolicy: Always
-          image: username/image-name:tag
-          command: ["python worker.py"]
+          image: owens3364/guardianai-worker
+          command: ["./dist/worker"]

@@ -8,7 +8,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - host: "username-flask.coe332.tacc.cloud"
+  - host: "rif252-flask.coe332.tacc.cloud"
     http:
         paths:
         - pathType: Prefix

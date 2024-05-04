@@ -9,5 +9,5 @@ spec:
     app: flask-api
   ports:
   - name: flask-api
-    port: 5173
-    targetPort: 5173
+    port: 5000
+    targetPort: 5000
