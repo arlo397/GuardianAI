@@ -18,5 +18,5 @@ spec:
       containers:
         - name: worker
           imagePullPolicy: Always
-          image: owens3364/guardianai-worker:latest
+          image: owens3364/guardianai-worker
           command: ["./dist/worker"]

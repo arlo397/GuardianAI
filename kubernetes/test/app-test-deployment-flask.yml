@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: flask-api
-        image: owens3364/guardianai-flask-api:latest
+        image: owens3364/guardianai-flask-api
         imagePullPolicy: Always
         ports:
         - containerPort: 5000
