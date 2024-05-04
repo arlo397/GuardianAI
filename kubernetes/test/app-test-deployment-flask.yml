@@ -2,6 +2,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: flask-deployment-test
+  labels:
+    app: flask-api
 spec:
   replicas: 1
   selector:
@@ -14,13 +16,25 @@ spec:
     spec:
       containers:
       - name: flask-api
-        image: owens3364/guardianai-flask-api
+        image: arlo397/flask-api
         imagePullPolicy: Always
         ports:
         - containerPort: 5000
         env:
         - name: LOG_LEVEL
           value: "DEBUG"
+        - name: KAGGLE_USERNAME
+          value: "username"
+        - name: KAGGLE_KEY
+          value: "key"
+        - name: KAGGLE_DATASET
+          value: credit-card-fraud-prediction
+        - name: KAGGLE_FILENAME
+          value: "fraud test.csv"
+        - name: KAGGLE_OWNER
+          value: "kelvinkelue"
+        - name: BING_API_KEY
+          value: "AoaZqu_awoToijquulNRBaNbW98dniWa17O-QGrlBxP6Nv60C-3YaMIDkLqNb5UL"
         - name: REDIS_IP
           value: "redis-service-test"
         command: ["python", "api.py"]
