@@ -2,6 +2,6 @@ FROM python:3.10-slim
 
 WORKDIR /app
 COPY src/requirements_api.txt src/requirements_worker.txt ./
-RUN pip install -r requirements_api.txt -r requirements_worker.txt pytest
+RUN pip install -r requirements_api.txt -r requirements_worker.txt pytest torch
 
 COPY src/api.py src/services.py src/worker.py src/ml/input_vectorization.py src/ml/ml_model.py test/test_api.py test/test_services.py test/test_worker.py ./
