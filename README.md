@@ -69,6 +69,15 @@ The following software diagram captures the primary components and workflow of o
 - `requirements_api.txt`: Text file listing all of the external Python library requirements used by the API service.
 - `requirements_worker.txt`: Text file listing all of the external Python library requirements used by the Worker service. These are separate to minimize container size.
 - `kubernetes/`: Directory for the Kubernetes configuration files.
+  - `test/app-test-deployment-flask.yml`: Deployment configuration for managing a test instance of our Flask application
+  - `test/app-test-deployment-redis.yml`: Deployment configuration for managing a test instance of Redis in our environment.
+  - `test/app-test-deployment-worker.yml`: Deployment configuration for managing a test instance of our background worker in the environment
+  - `test/app-test-ingress-flask.yml`: Configuration defines a Kubernetes Ingress resource that manages access to the Flask application within the test environment. The Ingress is set up with Nginx as the ingress class and allows access through the specified hostname username-flask.coe332.tacc.cloud without SSL redirection. It details a routing rule where all traffic to the root path (/) is directed to the flask-api-nodeport-service-test service on port 5173. This setup facilitates easy access to the Flask application for external users during development and testing, without the need for complex networking configurations.
+  - `test/app-test-pvc-redis.yml`: Configuration sets up a Kubernetes deployment for a Redis instance in the test environment, integrating a Persistent Volume Claim (PVC) for data persistence. Notably, it configures a volume named redis--data, mounted at /data, which utilizes the PVC redis--data to persist data. This arrangement guarantees data retention across container restarts, making it ideal for testing scenarios that require data persistence.
+  - `test/app-test-service-flask.yml`: Service that exposes the Flask API in the test environment through a ClusterIP service.
+  - `test/app-test-service-nodeport-flask.yml`: Service that exposes the Flask API in the test environment through a ClusterIP service.
+  - `test/app-test-service-redis.yml`: Service that exposes the Redis instance in the test environment using a ClusterIP service type.
+  - `src/`: Contains k8s yaml production files that serve the same purpose as what's listed in the `test/` directory. 
 - `redis-data/`: Directory for Redis container to presist data to file system across container executions.
 - `test/test_api.py`: Exhaustively tests functionality in `src/api.py`
 - `test/test_services.py`: Exhaustively tests functionality in `src/services.py`
@@ -137,7 +146,7 @@ curl <ipaddress>:<PORT>/help
 ```
 
 #### Using Application at Public Endpoint 
-Assumeing you have already created a deployment and a service (of type ClusterIP) for your Flask API. There are two new k8s objects required: `Service` object of type `Nodeport` & `Ingress`
+Assuming you have already created a deployment and a service (of type ClusterIP) for your Flask API. There are two new k8s objects required: `Service` object of type `Nodeport` & `Ingress`
 
 Public acccess to our deployment is made possible via k8s `Service` object of type `Nodeport` which exposes our Flask API on a public port. `Ingress` specifies the subdomain to make the Flask API available on and maps this domain to the public port created. 
 
@@ -587,40 +596,6 @@ While the service is up (after executing `docker-compose up`), you may curl the 
         /results/<id> (GET): Returns the job result as a image file download.
           Example Command: curl "localhost:5173/results/99e6820f-0e4f-4b55-8052-7845ea390a44"
       ```
-
-### **Kubernetes**
-
-- **app-test-deployment-flask.yml**
-
-  This file defines a Kubernetes deployment configuration for managing a test instance of our Flask application. The deployment specifies a single replica (replicas: 1) running our application within an Ubuntu 22.04 container. The Flask app is initiated by executing the python api.py command, ensuring it runs in an isolated environment within the Kubernetes cluster tailored for testing. This setup is exclusively for the test environment, providing a controlled setting that allows developers to perform thorough testing and verification of the application's functionality before it is deployed to production.
-
-- **app-test-deployment-redis.yml**
-
-  This file defines a Kubernetes deployment configuration for managing a test instance of Redis in our environment. The deployment specifies a single replica (replicas: 1) running Redis on an Ubuntu 22.04 container. This setup is specifically for the test environment, enabling developers to conduct comprehensive functional tests and validations of the Redis instance within an isolated Kubernetes cluster setting before deployment to production.
-
-- **app-test-deployment-worker.yml**
-
-  This file defines a Kubernetes deployment configuration for managing a test instance of our background worker in the environment. The worker is initiated by executing the python worker.py command, ensuring it operates within an isolated environment in the Kubernetes cluster.
-
-- **app-test-ingress-flask.yml**
-
-  This configuration file defines a Kubernetes Ingress resource that manages access to the Flask application within the test environment. The Ingress is set up with Nginx as the ingress class and allows access through the specified hostname username-flask.coe332.tacc.cloud without SSL redirection. It details a routing rule where all traffic to the root path (/) is directed to the flask-api-nodeport-service-test service on port 5173. This setup facilitates easy access to the Flask application for external users during development and testing, without the need for complex networking configurations.
-
-- **app-test-pvc-redis.yml**
-
-  This configuration file sets up a Kubernetes deployment for a Redis instance in the test environment, integrating a Persistent Volume Claim (PVC) for data persistence. The deployment ensures that Redis runs with the ubuntu:22.04 image as a single replica. Notably, it configures a volume named redis-<username>-data, mounted at /data, which utilizes the PVC redis-<username>-data to persist data. This arrangement guarantees data retention across container restarts, making it ideal for testing scenarios that require data persistence.
-
-- **app-test-service-flask.yml**
-
-  This file defines a Kubernetes Service that exposes the Flask API in the test environment through a ClusterIP service. The service uses the label selector app: flask-api to target the corresponding Pods, routing traffic to the Flask application on port 5173. This setup ensures that only other services within the cluster can access the Flask API, maintaining network security and isolation.
-
-- **app-test-service-nodeport-flask.yml**
-
-  This file defines a ClusterIP service as well, similar to the above. It exposes the Flask API on port 5173, ensuring that the service is accessible only within the Kubernetes cluster.
-
-- **app-test-service-redis.yml**
-
-  This file defines a Kubernetes Service that exposes the Redis instance in the test environment using a ClusterIP service type. Utilizing the label selector app: redis to target the relevant Pods, the service is configured to route traffic on port 6379 to the Redis instance. The ClusterIP configuration ensures that the service is only accessible internally within the cluster, ideal for protected backend services such as databases.
 
 #### Instructions to Stop Microservice
 
