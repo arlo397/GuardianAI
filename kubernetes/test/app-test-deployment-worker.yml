@@ -17,6 +17,11 @@ spec:
     spec:
       containers:
         - name: worker
+          image: arlo397/worker
           imagePullPolicy: Always
-          image: owens3364/guardianai-worker
+          env:
+          - name: LOG_LEVEL
+            value: "DEBUG"
+          - name: REDIS_IP
+            value: "redis-deployment-test"
           command: ["./dist/worker"]
