@@ -4,7 +4,7 @@
 
 ### Project Description
 
-Our project focuses on leveraging the Credit Card Fraud Prediction Dataset available on Kaggle to create a robust containerized web application. This application utilizes a series of databases for efficient data storage and management, enabling user querying and facilitating job queues. By employing Flask, we will develop API endpoints that provide users with access to comprehensive summary statistics and plots derived from the Credit Card Fraud dataset. More importantly, considering the widespread utilization of this dataset for machine learning-based fraud detection, we aim to design our application to accept credit card input for predicting potential fraud from a pre-trained model we develop. This will allow users to submit a job, and retrieve a prediction about whether the particular credit card attributes are likely fraudulent. Our application is seamless, user-friendly, containerized, and published to the web. 
+Our project focuses on leveraging the Credit Card Fraud Prediction Dataset available on Kaggle to create a robust containerized web application. This application utilizes a series of databases for efficient data storage and management, enabling user querying and facilitating job queues. By employing Flask, we will develop API endpoints that provide users with access to comprehensive summary statistics and plots derived from the Credit Card Fraud dataset. More importantly, considering the widespread utilization of this dataset for machine learning-based fraud detection, we aim to design our application to accept credit card input for predicting potential fraud from a pre-trained model we develop. This will allow users to submit a job, and retrieve a prediction about whether the particular credit card attributes are likely fraudulent. Our application is seamless, user-friendly, containerized, and published to the web.
 
 ### Project Importance
 
@@ -25,7 +25,7 @@ This dataset is a rich resource that fosters the development, testing, and compa
 
 ### Software Diagram
 
-The following software diagram captures the primary components and workflow of our system. The diagram illustrates how data is queried from Kaggle and stored in a Redis Database that is presisited via frequent saving to the local system hardrive. Moreover, the diagram depicts the user's interaction with various routes via the Web Application, facilitating data access and job request submissions processed by the `Worker`. Additionally, the diagram illustrates how different databases are used for presisting the raw credit card data, the job queue, the client's submitted job information, and lastly a database for the job results. This entire process is encapsulated and deployed within a Docker container, seamlessly orchestrated by Kubernetes, which pulls the docker images from DockerHub, and scales the containers as necessary. 
+The following software diagram captures the primary components and workflow of our system. The diagram illustrates how data is queried from Kaggle and stored in a Redis Database that is presisited via frequent saving to the local system hardrive. Moreover, the diagram depicts the user's interaction with various routes via the Web Application, facilitating data access and job request submissions processed by the `Worker`. Additionally, the diagram illustrates how different databases are used for presisting the raw credit card data, the job queue, the client's submitted job information, and lastly a database for the job results. This entire process is encapsulated and deployed within a Docker container, seamlessly orchestrated by Kubernetes, which pulls the docker images from DockerHub, and scales the containers as necessary.
 
 <img src="img/softwareDiagram.png" alt="Alt text"  />
 
@@ -77,7 +77,7 @@ The following software diagram captures the primary components and workflow of o
   - `test/app-test-service-flask.yml`: Service that exposes the Flask API in the test environment through a ClusterIP service.
   - `test/app-test-service-nodeport-flask.yml`: Service that exposes the Flask API in the test environment through a ClusterIP service.
   - `test/app-test-service-redis.yml`: Service that exposes the Redis instance in the test environment using a ClusterIP service type.
-  - `src/`: Contains k8s yaml production files that serve the same purpose as what's listed in the `test/` directory. 
+  - `src/`: Contains k8s yaml production files that serve the same purpose as what's listed in the `test/` directory.
 - `redis-data/`: Directory for Redis container to presist data to file system across container executions.
 - `test/test_api.py`: Exhaustively tests functionality in `src/api.py`
 - `test/test_services.py`: Exhaustively tests functionality in `src/services.py`
@@ -112,7 +112,8 @@ dc51e6ac5ae9   redis:7                         "docker-entrypoint.s…"   59 sec
 Once you have ensured that the microservice is up and running, you can access the application via `curl` commands listed below locally.
 
 #### Instructions for Deploying Application on Kubernetes Cluster
-To deploy the containerized application onto the Kubernetes cluster, create the following deployments. 
+
+To deploy the containerized application onto the Kubernetes cluster, create the following deployments.
 
 ```
 kubectl apply -f app-prod-deployment-flask.yml
@@ -120,9 +121,9 @@ kubectl apply -f app-prod-deployment-redis.yml
 kubectl apply -f app-prod-deployment-worker.yml
 ```
 
-List the deployments and make sure they are all running via `kubectl get deployments`. You should also see that the pods are up and running by executing `kubectl get pods`. 
+List the deployments and make sure they are all running via `kubectl get deployments`. You should also see that the pods are up and running by executing `kubectl get pods`.
 
-Since our application utilizes databases, we need to persist the data across container starts and stops. In k8s, this is achieved via PVCs. Execute the following: 
+Since our application utilizes databases, we need to persist the data across container starts and stops. In k8s, this is achieved via PVCs. Execute the following:
 
 ```
 # Instruct k8s to fill a volume with a PVC
@@ -132,30 +133,33 @@ kubectl apply -f app-prod-pvc-redis.yml
 kubectl apply -f pvc-basic.yaml
 ```
 
-k8s Services provides a way for an application running as a collection of pods on a single IP and port. To achieve this execute the following: 
+k8s Services provides a way for an application running as a collection of pods on a single IP and port. To achieve this execute the following:
 
 ```
 kubectl apply -f app-prod-service-flask.yml
 kubectl apply -f app-prod-service-redis.yml
 ```
 
-Afterwards, excute `kubectl get services` to view the new servicr with private IP. Using the listed IP address and port, you should be able to communicate the with Flask Server. To achieve this, you must be on the k8s private network so you need to `exec` into the pod and then from the inside, execute a command as such: 
+Afterwards, excute `kubectl get services` to view the new servicr with private IP. Using the listed IP address and port, you should be able to communicate the with Flask Server. To achieve this, you must be on the k8s private network so you need to `exec` into the pod and then from the inside, execute a command as such:
 
 ```
 curl <ipaddress>:<PORT>/help
 ```
 
-#### Using Application at Public Endpoint 
+#### Using Application at Public Endpoint
+
 Assuming you have already created a deployment and a service (of type ClusterIP) for your Flask API. There are two new k8s objects required: `Service` object of type `Nodeport` & `Ingress`
 
-Public acccess to our deployment is made possible via k8s `Service` object of type `Nodeport` which exposes our Flask API on a public port. `Ingress` specifies the subdomain to make the Flask API available on and maps this domain to the public port created. 
+Public acccess to our deployment is made possible via k8s `Service` object of type `Nodeport` which exposes our Flask API on a public port. `Ingress` specifies the subdomain to make the Flask API available on and maps this domain to the public port created.
 
 To achieve this. First create the NodePort
+
 ```
 kubectl apply -f app-service-nodeport-flask.yml
 ```
 
 Then, check that the service was created successfully and determine what port it was created for it. For example by running, `kubectl get services`
+
 ```
 NAME                           TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)          AGE
 
@@ -167,14 +171,15 @@ Test that the NodePort Service is working why using the special domain: `coe332.
 curl coe332.tacc.cloud:<port>/help
 ```
 
-To map tht NodePort to a specific domain on the public internet, create the ingress object: 
+To map tht NodePort to a specific domain on the public internet, create the ingress object:
 
 ```
 kubectl apply -f app-test-ingress-flask.yaml
 ```
-After that is successfully executed, you should be able to access the Flask Application on the internet, from the domain specified in the host field of the `ingress` yaml. 
 
-Try this by running the following command from any machine. 
+After that is successfully executed, you should be able to access the Flask Application on the internet, from the domain specified in the host field of the `ingress` yaml.
+
+Try this by running the following command from any machine.
 
 ```
 curl username-flask.coe332.tacc.cloud/help
@@ -553,46 +558,46 @@ While the service is up (after executing `docker-compose up`), you may curl the 
         Description of all application routes:
         /transaction_data (GET): Returns all transaction data currently stored in Redis.
           Example Command: curl "localhost:5173/transaction_data"
-      
+
         /transaction_data (POST): Fetches transaction data from Kaggle or disk and stores it in Redis.
           Example Command: curl -X POST "localhost:5173/transaction_data"
-      
+
         /transaction_data (DELETE): Deletes all transaction data stored in Redis.
           Example Command: curl -X DELETE "localhost:5173/transaction_data"
-      
+
         /transaction_data_view(GET): Returns a default slice of the transaction data stored in Redis (first 5 entries).
           Example Command: curl "localhost:5173/transaction_data_view"
-      
+
         /transaction_data_view?limit=<int>&offset=<int> (GET): Returns a slice of the transaction data stored in Redis.
           Example Command: curl "localhost:5173/transaction_data_view?limit=2&offset=7"
-      
+
         /amt_analysis (GET): Returns statistical descriptions of the transaction amounts in the dataset.
           Example Command: curl "localhost:5173/amt_analysis"
-      
+
         /amt_fraud_correlation (GET): Returns the correlation between transaction amount and fraud status in the dataset.
           Example Command: curl "localhost:5173/amt_fraud_correlation"
-      
+
         /fraudulent_zipcode_info (GET): Returns the zipcode with the highest number of fraudulent transactions, and retrieves its geographic location.
           Example Command: curl "localhost:5173/fraudulent_zipcode_info"
-      
+
         /fraud_by_state (GET):  Returns the number of fraudulent transactions per state.
           Example Command: curl "localhost:5173/fraud_by_state"
-      
+
         /ai_analysis (GET): Returns the most important features and feature importances from the trained model.
           Example Command: curl "localhost:5173/ai_analysis"
-      
+
         /jobs (GET): Returns all job ids in the database.
           Example Command: curl "localhost:5173/jobs"
-      
+
         /jobs (DELETE): Clears all jobs from the jobs database.
           Example Command: curl -X DELETE "localhost:5173/jobs"
-      
+
         /jobs (POST): Creates a job for plotting a feature specified by the user.
           Example Command: curl -X POST "localhost:5173/jobs" -d "{"graph_feature": "gender"}" -H "Content-Type: application/json"
-      
+
         /jobs/<id> (GET): Returns information about the specified job id.
           Example Command: curl "localhost:5173/jobs/99e6820f-0e4f-4b55-8052-7845ea390a44"
-      
+
         /results/<id> (GET): Returns the job result as a image file download.
           Example Command: curl "localhost:5173/results/99e6820f-0e4f-4b55-8052-7845ea390a44"
       ```

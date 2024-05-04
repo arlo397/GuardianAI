@@ -6,7 +6,7 @@ RUN pip install -r requirements_worker.txt
 RUN pip install pyinstaller
 RUN pip install torch==2.3.0 --index-url https://download.pytorch.org/whl/cpu
 
-COPY src/services.py src/worker.py src/ml/binaryclassifierstate.pt src/ml/input_vectorization.py src/ml/meanandstd.txt src/ml/ml_model.py src/ml/merchants.txt src/ml/categories.txt src/ml/jobs.txt ./
+COPY src/services.py src/worker.py src/ml/input_vectorization.py src/ml/ml_model.py ./
 
 RUN apt-get update && apt-get install -y binutils
 
@@ -15,3 +15,5 @@ RUN pyinstaller -F worker.py
 FROM python:3.10-slim
 
 COPY --from=builder /app/dist/ /dist/
+
+COPY src/ml/binaryclassifierstate.pt src/ml/meanandstd.txt src/ml/merchants.txt src/ml/categories.txt src/ml/jobs.txt ./
