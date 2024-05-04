@@ -18,7 +18,6 @@ spec:
       containers:
         - name: redis
           image: redis
-          command: []
           volumeMounts:
           - name: redis-rif252-data
             mountPath: "/data"
