@@ -24,11 +24,11 @@ spec:
         - name: LOG_LEVEL
           value: "DEBUG"
         - name: KAGGLE_USERNAME
-          value: "username"
+          value: "reemfashho"
         - name: KAGGLE_KEY
-          value: "key"
+          value: "34287c256aa613dcd1f6dbec4e57f4cf"
         - name: KAGGLE_DATASET
-          value: credit-card-fraud-prediction
+          value: "credit-card-fraud-prediction"
         - name: KAGGLE_FILENAME
           value: "fraud test.csv"
         - name: KAGGLE_OWNER
@@ -36,5 +36,5 @@ spec:
         - name: BING_API_KEY
           value: "AoaZqu_awoToijquulNRBaNbW98dniWa17O-QGrlBxP6Nv60C-3YaMIDkLqNb5UL"
         - name: REDIS_IP
-          value: "redis-service-test"
+          value: "redis-deployment-test"
         command: ["python", "api.py"]
