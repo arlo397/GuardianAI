@@ -1,0 +1,27 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker-deployment-test
+  labels:
+    app: worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: worker
+  template:
+    metadata:
+      labels:
+        app: worker
+    spec:
+      containers:
+        - name: worker
+          image: arlo397/worker
+          imagePullPolicy: Always
+          env:
+          - name: LOG_LEVEL
+            value: "DEBUG"
+          - name: REDIS_IP
+            value: "redis-service-test"
+          command: ["./dist/worker"]
