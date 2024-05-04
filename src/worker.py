@@ -1,4 +1,3 @@
-from csv import reader
 from datetime import datetime
 from hotqueue import HotQueue
 from input_vectorization import flatten, onehot_encode
@@ -82,7 +81,7 @@ def _execute_graph_feature_analysis_job(job_id: str, job_description_dict: dict[
 
     df = pd.DataFrame(pipeline_data_out_of_redis(get_redis(RedisDb.TRANSACTION_DB)))
     df[['trans_date', 'trans_time']] = df['trans_date_trans_time'].str.split(' ', expand=True)
-    df['trans_date'] = pd.to_datetime(df['trans_date'], format='%m/%d/%Y')
+    df['trans_date'] = pd.to_datetime(df['trans_date'], format='%d/%m/%Y')
 
     df['trans_month'] = df['trans_date'].dt.to_period('M').astype('str')
     df['trans_dayOfWeek'] = df['trans_date'].dt.day_name()

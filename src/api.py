@@ -1,4 +1,3 @@
-from datetime import datetime
 from flask import Flask, send_file, abort, request
 from hotqueue import HotQueue
 from io import BytesIO

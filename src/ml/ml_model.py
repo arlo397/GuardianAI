@@ -3,7 +3,6 @@ import torch
 import torch.nn as nn
 from torch.optim import Adam
 from torch.utils.data import DataLoader, TensorDataset
-from torcheval.metrics import BinaryAUROC
 
 from input_vectorization import TestValidateTrainSplit, INPUT_SIZE
 
@@ -90,6 +89,7 @@ def evaluate_model(model: CreditCardFraudDetectionModel, datasource: TestValidat
     print(f'Precision: {precision}')
     print(f'Recall: {recall}')
     print(f'F1: {f1}')
+    from torcheval.metrics import BinaryAUROC # Here so we don't need it for inference-only usage
     metric = BinaryAUROC()
     metric.update(predictions, test_labels)
     print(f'AUROC: {metric.compute().item()}')

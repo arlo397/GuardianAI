@@ -2,8 +2,6 @@ hotqueue
 matplotlib
 orjson
 pandas
-requests
 redis
 seaborn
-torcheval
-torch
+# torch

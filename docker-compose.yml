@@ -36,4 +36,4 @@ services:
       LOG_LEVEL: DEBUG
     depends_on:
       - redis
-    command: python worker.py
+    command: ./dist/worker

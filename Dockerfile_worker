@@ -1,7 +1,17 @@
-FROM python:3.10-slim
+FROM python:3.10-slim as builder
 
 WORKDIR /app
 COPY src/requirements_worker.txt ./
 RUN pip install -r requirements_worker.txt
+RUN pip install pyinstaller
+RUN pip install torch==2.3.0 --index-url https://download.pytorch.org/whl/cpu
 
 COPY src/services.py src/worker.py src/ml/binaryclassifierstate.pt src/ml/input_vectorization.py src/ml/meanandstd.txt src/ml/ml_model.py src/ml/merchants.txt src/ml/categories.txt src/ml/jobs.txt ./
+
+RUN apt-get update && apt-get install -y binutils
+
+RUN pyinstaller -F worker.py
+
+FROM python:3.10-slim
+
+COPY --from=builder /app/dist/ /dist/

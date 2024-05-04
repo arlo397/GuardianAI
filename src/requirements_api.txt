@@ -6,8 +6,3 @@ pandas
 redis
 requests
 urllib3
-numpy
-seaborn
-category-encoders
-scikit-learn
-joblib
