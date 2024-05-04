@@ -130,13 +130,15 @@ kubectl apply -f app-prod-service-flask.yml
 kubectl apply -f app-prod-service-redis.yml
 ```
 
-Afterwards, excute `kubectl get services` to view the new serice with private IP. Using the listed IP address and port, you should be able to communicate the with Flask Server. To achieve this, you must be on the k8s private network so you need to `exec` into the pod and then from the inside, execute a command as such: 
+Afterwards, excute `kubectl get services` to view the new servicr with private IP. Using the listed IP address and port, you should be able to communicate the with Flask Server. To achieve this, you must be on the k8s private network so you need to `exec` into the pod and then from the inside, execute a command as such: 
 
 ```
 curl <ipaddress>:<PORT>/help
 ```
 
 #### Using Application at Public Endpoint 
+Assumeing you have already created a deployment and a service (of type ClusterIP) for your Flask API. There are two new k8s objects required: `Service` object of type `Nodeport` & `Ingress`
+
 Public acccess to our deployment is made possible via k8s `Service` object of type `Nodeport` which exposes our Flask API on a public port. `Ingress` specifies the subdomain to make the Flask API available on and maps this domain to the public port created. 
 
 To achieve this. First create the NodePort
